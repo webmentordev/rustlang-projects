@@ -1,0 +1,6 @@
+{
+    "api": "http://127.0.0.1:8090",
+    "url": {
+        "sales": "https://www.trademe.co.nz/a/property/residential/sale/search"
+    }
+}

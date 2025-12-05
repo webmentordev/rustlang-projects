@@ -1,0 +1,9 @@
+/target
+/chrome-linux*
+/pages
+/sheets
+/headless
+/headless_parser
+/listings.db
+/pocketbase/pocketbase
+/pocketbase/pb_data
