@@ -16,22 +16,39 @@ struct RequestBody {
     name: String,
 }
 
+struct AppData {
+    city_data: Vec<String>,
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    match File::open("result_file.txt") {
-        Ok(_) => eprintln!("✅ Database found."),
-        Err(_) => {
-            if let Err(e) = handle_build() {
-                eprintln!("Build error: {}", e);
-                return Ok(());
-            }
+    if File::open("result_file.txt").is_ok() {
+        println!("✅ Database found.");
+    }else{
+        if let Err(e) = handle_build() {
+            eprintln!("Build error: {}", e);
+            return Ok(());
         }
     }
-    println!("🚀 Listening at: http://127.0.0.1:8030");
-    HttpServer::new(|| App::new().service(search).service(index).service(get_all))
-        .bind(("127.0.0.1", 8030))?
+    
+    println!("🚀 Listening at: http://0.0.0.1:8030");
+    HttpServer::new(|| App::new().app_data(web::Data::new(AppData {
+                city_data: load_into_memory(),
+            })).service(search).service(index).service(get_all))
+        .bind(("0.0.0.0", 8030))?
         .run()
         .await
+}
+
+fn load_into_memory() -> Vec<String>{
+    let file = File::open("result_file.txt").unwrap();
+    let reader = BufReader::new(file);
+    let lines = reader.lines();
+    let mut data: Vec<String> = vec![];
+    for line_result in lines.flatten() {
+        data.push(line_result);
+    }
+    data
 }
 
 #[get("/")]
@@ -77,19 +94,11 @@ async fn search(body: web::Json<RequestBody>) -> Result<impl Responder> {
 }
 
 #[get("/get-all")]
-async fn get_all() -> Result<impl Responder> {
-    let file = File::open("result_file.txt").unwrap();
-    let reader = BufReader::new(file);
-    let lines = reader.lines();
-    let mut data: Vec<String> = vec![];
-    for line_result in lines {
-        let line = line_result.unwrap();
-        data.push(line);
-    }
+async fn get_all(data: web::Data<AppData>) -> Result<impl Responder> {
     Ok(web::Json(Response {
         success: true,
         message: "Fetched whole database".to_string(),
-        records: Some(data),
+        records: Some(data.city_data.clone()),
     }))
 }
 
