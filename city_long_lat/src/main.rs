@@ -8,8 +8,16 @@ struct Response {
     success: bool,
     message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    records: Option<Vec<String>>,
+    records: Option<Vec<Address>>,
 }
+
+#[derive(Serialize, Clone)]
+struct Address{
+    location: String,
+    longitude: f32,
+    latitude: f32
+}
+
 
 #[derive(Deserialize)]
 struct RequestBody {
@@ -17,7 +25,7 @@ struct RequestBody {
 }
 
 struct AppData {
-    city_data: Vec<String>,
+    city_data: Vec<Address>,
 }
 
 #[actix_web::main]
@@ -40,13 +48,21 @@ async fn main() -> std::io::Result<()> {
         .await
 }
 
-fn load_into_memory() -> Vec<String>{
+fn load_into_memory() -> Vec<Address>{
     let file = File::open("result_file.txt").unwrap();
     let reader = BufReader::new(file);
     let lines = reader.lines();
-    let mut data: Vec<String> = vec![];
+    let mut data: Vec<Address> = vec![];
     for line_result in lines.flatten() {
-        data.push(line_result);
+        let parts: Vec<&str> = line_result.split(" ").collect();
+        let size = parts.len();
+        let lng: f32 = parts[size - 1].parse().unwrap_or(0.0);
+        let lat: f32 = parts[size - 2].parse().unwrap_or(0.0);
+        data.push(Address{
+            location: line_result,
+            longitude: lng,
+            latitude: lat
+        });
     }
     data
 }
@@ -61,22 +77,20 @@ async fn index() -> Result<impl Responder> {
 }
 
 #[post("/search")]
-async fn search(body: web::Json<RequestBody>) -> Result<impl Responder> {
-    let file = File::open("result_file.txt").unwrap();
-    let reader = BufReader::new(file);
-    let lines = reader.lines();
-    let mut data: Vec<String> = vec![];
+async fn search(data: web::Data<AppData>, body: web::Json<RequestBody>) -> Result<impl Responder> {
+    let lines = data.city_data.clone();
+    let mut result_data: Vec<Address> = vec![];
     let mut found = false;
 
-    for line_result in lines {
-        let line = line_result.unwrap();
-        if line.contains(&body.name) {
-            let parts: Vec<&str> = line.split(" ").collect();
-            let size = parts.len();
-            let lng = parts[size - 1];
-            let lat = parts[size - 2];
-            found = true;
-            data.push(format!("Lng: {} & Lat: {}", lng, lat));
+    let name_to_search = &body.name.to_lowercase();
+    for address in lines {
+        let line_search = address.location.to_lowercase();
+        if line_search.contains(name_to_search) {
+            let parts: Vec<&str> = address.location.split(" ").collect();
+            if parts.len() > 2 {
+                found = true;
+                result_data.push(address);
+            }
         }
     }
     if found == false {
@@ -89,7 +103,7 @@ async fn search(body: web::Json<RequestBody>) -> Result<impl Responder> {
     Ok(web::Json(Response {
         success: true,
         message: "City data found!".to_string(),
-        records: Some(data),
+        records: Some(result_data),
     }))
 }
 
@@ -149,22 +163,25 @@ fn handle_build() -> Result<(), Box<dyn std::error::Error>> {
     let mut processed = String::new();
 
     while let Some(line_result) = lines.next() {
-        let line = line_result?;
-        let items: Vec<&str> = line.split(" ").collect();
-        let last = items.last().unwrap();
-
-        let newline = match last.parse::<f32>() {
-            Ok(_) => line.to_string(),
-            Err(_) => {
-                if let Some(next_line_result) = lines.next() {
-                    let next_line = next_line_result?;
-                    format!("{} {}", line, next_line)
-                } else {
-                    line.to_string()
+        let mut line = line_result?;
+        loop {
+            let items: Vec<&str> = line.split(" ").collect();
+            let last = items.last().unwrap();
+            match last.parse::<f64>() {
+                Ok(_) => {
+                    break;
+                }
+                Err(_) => {
+                    if let Some(next_line_result) = lines.next() {
+                        let next_line = next_line_result?;
+                        line = format!("{} {}", line, next_line);
+                    } else {
+                        break;
+                    }
                 }
             }
-        };
-        processed.push_str(&newline);
+        }
+        processed.push_str(&line);
         processed.push('\n');
     }
 
