@@ -39,7 +39,7 @@ async fn main() -> std::io::Result<()> {
         }
     }
     
-    println!("🚀 Listening at: http://0.0.0.1:8030");
+    println!("🚀 Listening at: http://0.0.0.0:8030");
     HttpServer::new(|| App::new().app_data(web::Data::new(AppData {
                 city_data: load_into_memory(),
             })).service(search).service(index).service(get_all))
