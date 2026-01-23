@@ -31,6 +31,41 @@
         </div>
       </div>
 
+      <!-- Rate Limit Alert -->
+      <transition
+        enter-active-class="transition-all duration-300 ease-out"
+        enter-from-class="opacity-0 -translate-y-4"
+        enter-to-class="opacity-100 translate-y-0"
+        leave-active-class="transition-all duration-200 ease-in"
+        leave-from-class="opacity-100 translate-y-0"
+        leave-to-class="opacity-0 -translate-y-4"
+      >
+        <div v-if="rateLimitError" class="mb-6 backdrop-blur-xl bg-red-500/10 border border-red-500/30 rounded-2xl p-6 shadow-lg shadow-red-500/10">
+          <div class="flex items-start gap-4">
+            <div class="flex-shrink-0 w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center">
+              <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <h3 class="text-red-400 font-semibold text-lg mb-1">Rate Limit Exceeded</h3>
+              <p class="text-red-300/80 text-sm mb-3">{{ rateLimitMessage }}</p>
+              <div v-if="retryAfter" class="flex items-center gap-2 text-red-300/60 text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>Please try again in {{ formatRetryTime(retryAfter) }}</span>
+              </div>
+            </div>
+            <button @click="dismissRateLimitError" class="flex-shrink-0 text-red-400 hover:text-red-300 transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </transition>
+
       <!-- Input Card -->
       <div class="backdrop-blur-xl bg-slate-900/50 border border-slate-800/50 rounded-3xl p-8 mb-8 shadow-2xl shadow-cyan-500/10 hover:shadow-cyan-500/20 transition-all duration-500 animate-fade-in-up">
         <div class="space-y-6">
@@ -55,6 +90,7 @@
                 placeholder="Enter quantity (1-50000)"
                 min="1"
                 max="50000"
+                :disabled="isRateLimited"
               >
               <div class="absolute inset-0 rounded-2xl bg-gradient-to-r from-cyan-500/20 to-fuchsia-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none -z-10 blur-xl"></div>
             </div>
@@ -64,17 +100,20 @@
           <div class="flex flex-col sm:flex-row gap-3">
             <button 
               @click="get_data" 
-              :disabled="loading"
+              :disabled="loading || isRateLimited"
               class="relative flex-1 group overflow-hidden px-8 py-4 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-semibold rounded-2xl shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5"
             >
               <span class="relative z-10 flex items-center justify-center gap-2">
-                <svg v-if="!loading" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg v-if="!loading && !isRateLimited" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                 </svg>
-                <svg v-else class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg v-else-if="loading" class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                 </svg>
-                {{ loading ? 'Generating...' : 'Generate UUIDs' }}
+                <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+                {{ loading ? 'Generating...' : isRateLimited ? 'Rate Limited' : 'Generate UUIDs' }}
               </span>
               <div class="absolute inset-0 bg-gradient-to-r from-cyan-400 to-fuchsia-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
             </button>
@@ -93,6 +132,12 @@
               </span>
               <div class="absolute inset-0 bg-gradient-to-r from-fuchsia-400 to-cyan-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
             </a>
+          </div>
+
+          <!-- Rate Limit Info -->
+          <div v-if="requestCount > 0" class="flex items-center justify-between px-4 py-3 rounded-xl bg-slate-950/50 border border-slate-800/30">
+            <span class="text-slate-400 text-sm">Requests made</span>
+            <span class="font-mono text-cyan-400 font-semibold">{{ requestCount }}</span>
           </div>
         </div>
       </div>
@@ -194,6 +239,13 @@ const filename = ref(null);
 const loading = ref(false);
 const copied = ref(false);
 const copiedIndex = ref(null);
+const rateLimitError = ref(false);
+const rateLimitMessage = ref('');
+const retryAfter = ref(null);
+const isRateLimited = ref(false);
+const requestCount = ref(0);
+
+let rateLimitTimer = null;
 
 async function get_data() {
   if (uuid.value > 50000) {
@@ -201,16 +253,89 @@ async function get_data() {
     uuid.value = 50000;
     return;
   }
+
+  if (isRateLimited.value) {
+    return;
+  }
   
   loading.value = true;
+  rateLimitError.value = false;
+  
   try {
     let data = await $fetch(`/api/generate/${uuid.value}`);
     uuids.value = data.uuids;
     filename.value = data.file;
+    requestCount.value++;
   } catch (error) {
     console.error('Error generating UUIDs:', error);
+    
+    // Check if it's a 429 rate limit error
+    if (error.statusCode === 429 || error.response?.status === 429) {
+      handleRateLimitError(error);
+    } else {
+      // Handle other errors
+      rateLimitMessage.value = "429 Too Many Requests" || 'An error occurred while generating UUIDs. Please try again.';
+      rateLimitError.value = true;
+    }
   } finally {
     loading.value = false;
+  }
+}
+
+function handleRateLimitError(error) {
+  isRateLimited.value = true;
+  rateLimitError.value = true;
+  
+  // Extract retry-after from headers if available
+  const retryAfterHeader = error.response?.headers?.['retry-after'] || 
+                          error.data?.retryAfter || 
+                          error.retryAfter;
+  
+  if (retryAfterHeader) {
+    // Parse retry-after (can be seconds or a date)
+    const retryAfterSeconds = parseInt(retryAfterHeader);
+    if (!isNaN(retryAfterSeconds)) {
+      retryAfter.value = retryAfterSeconds;
+    } else {
+      // If it's a date, calculate seconds until then
+      const retryDate = new Date(retryAfterHeader);
+      retryAfter.value = Math.ceil((retryDate - new Date()) / 1000);
+    }
+  } else {
+    // Default to 60 seconds if no retry-after is provided
+    retryAfter.value = 60;
+  }
+  
+  // Set custom message based on error response
+  rateLimitMessage.value = "429 Too Many Requests" || 
+                          "429 Too Many Requests" || 
+                          'You have exceeded the rate limit. Please wait before making another request.';
+  
+  // Clear existing timer if any
+  if (rateLimitTimer) {
+    clearTimeout(rateLimitTimer);
+  }
+  
+  // Set timer to re-enable after retry period
+  rateLimitTimer = setTimeout(() => {
+    isRateLimited.value = false;
+    retryAfter.value = null;
+  }, retryAfter.value * 1000);
+}
+
+function dismissRateLimitError() {
+  rateLimitError.value = false;
+}
+
+function formatRetryTime(seconds) {
+  if (seconds < 60) {
+    return `${seconds} second${seconds !== 1 ? 's' : ''}`;
+  } else if (seconds < 3600) {
+    const minutes = Math.ceil(seconds / 60);
+    return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+  } else {
+    const hours = Math.ceil(seconds / 3600);
+    return `${hours} hour${hours !== 1 ? 's' : ''}`;
   }
 }
 
@@ -233,6 +358,13 @@ async function copyUuid(item, index) {
     console.error('Failed to copy:', error);
   }
 }
+
+// Cleanup timer on component unmount
+onUnmounted(() => {
+  if (rateLimitTimer) {
+    clearTimeout(rateLimitTimer);
+  }
+});
 </script>
 
 <style scoped>

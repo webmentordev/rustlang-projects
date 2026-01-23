@@ -13,6 +13,7 @@ tokio = { version = "1", features = ["fs", "io-util"] }
 actix-files = "0.6"
 rust-embed = "8"
 mime_guess = "2"
+actix-web-ratelimit = "0.1"
 
 [profile.release]
 lto = true

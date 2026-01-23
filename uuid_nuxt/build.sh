@@ -1,3 +1,3 @@
 #!/bin/bash
 
-cd ui && npx nuxi generate && cd .. && cargo build --release
+cd ui && npm install && npx nuxi generate && cd .. && cargo build --release

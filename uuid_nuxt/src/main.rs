@@ -1,5 +1,9 @@
 use actix_web::{App, HttpResponse, HttpServer, Responder, get, HttpRequest, web};
+use actix_web_ratelimit::RateLimit;
+use actix_web_ratelimit::config::RateLimitConfig;
+use actix_web_ratelimit::store::MemoryStore;
 use actix_files::NamedFile;
+use std::sync::Arc;
 use std::io::Result;
 use std::collections::HashSet;
 use uuid::Uuid;
@@ -12,6 +16,7 @@ use std::time::Duration;
 use tokio::time::interval;
 use std::path::Path;
 use std::fs;
+
 
 #[derive(RustEmbed)]
 #[folder = "ui/dist"]
@@ -26,45 +31,22 @@ async fn main() -> Result<()> {
         cleanup_old_files().await;
     });
 
-    HttpServer::new(|| {
-        App::new().service(web::scope("/api")
-        .service(generate))
-        .service(download_file)
-        .default_service(web::route().to(static_files))
-    }).bind(("0.0.0.0", port))?.run().await
-}
+    let config = RateLimitConfig::default().max_requests(5).window_secs(60);
+    let store = Arc::new(MemoryStore::new());
 
-async fn cleanup_old_files() {
-    let mut cleanup_interval = interval(Duration::from_secs(300));
-    loop {
-        cleanup_interval.tick().await;
-        let files_dir = Path::new("files");
-        if !files_dir.exists() {
-            continue;
-        }
-        let now = std::time::SystemTime::now();
-        if let Ok(entries) = fs::read_dir(files_dir) {
-            for entry in entries.flatten() {
-                if let Ok(metadata) = entry.metadata() {
-                    if let Ok(modified) = metadata.modified() {
-                        if let Ok(age) = now.duration_since(modified) {
-                            // Delete files older than 10 minutes
-                            if age > Duration::from_secs(600) {
-                                let path = entry.path();
-                                if path.extension().and_then(|s| s.to_str()) == Some("json") {
-                                    if let Err(e) = fs::remove_file(&path) {
-                                        eprintln!("Failed to delete {:?}: {}", path, e);
-                                    } else {
-                                        println!("Deleted old file: {:?}", path);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    HttpServer::new(move || {
+        App::new()
+            .service(
+                web::scope("/api")
+                    .wrap(RateLimit::new(config.clone(), store.clone()))
+                    .service(generate)
+            )
+            .service(download_file)
+            .default_service(web::route().to(static_files))
+    })
+    .bind(("0.0.0.0", port))?
+    .run()
+    .await
 }
 
 #[get("/")]
@@ -137,4 +119,37 @@ fn random_number(len: usize) -> String{
         CHARS[idx] as char
     }).collect();
     rand_nums
+}
+
+async fn cleanup_old_files() {
+    let mut cleanup_interval = interval(Duration::from_secs(300));
+    loop {
+        cleanup_interval.tick().await;
+        let files_dir = Path::new("files");
+        if !files_dir.exists() {
+            continue;
+        }
+        let now = std::time::SystemTime::now();
+        if let Ok(entries) = fs::read_dir(files_dir) {
+            for entry in entries.flatten() {
+                if let Ok(metadata) = entry.metadata() {
+                    if let Ok(modified) = metadata.modified() {
+                        if let Ok(age) = now.duration_since(modified) {
+                            // Delete files older than 10 minutes
+                            if age > Duration::from_secs(600) {
+                                let path = entry.path();
+                                if path.extension().and_then(|s| s.to_str()) == Some("json") {
+                                    if let Err(e) = fs::remove_file(&path) {
+                                        eprintln!("Failed to delete {:?}: {}", path, e);
+                                    } else {
+                                        println!("Deleted old file: {:?}", path);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
