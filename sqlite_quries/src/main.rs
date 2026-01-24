@@ -48,7 +48,7 @@ async fn main() -> ioResult<()>{
     });
     println!("Listening at: http://127.0.0.1:{}", port);
     HttpServer::new(move || {
-        App::new().app_data(app_data.clone()).service(hello).service(create_user).service(records).service(get_record)
+        App::new().app_data(app_data.clone()).service(hello).service(create_user).service(records).service(get_record).service(delete_record)
     }).bind(("127.0.0.1", port))?.run().await
 }
 
@@ -144,5 +144,35 @@ async fn get_record(db: web::Data<AppData>, params: web::Path<i32>) -> ioResult<
             message: format!("Database error: {}", err),
             record: None,
         }))
+    }
+}
+
+
+// Delete a record
+#[post("/delete-record/{id}")]
+async fn delete_record(db: web::Data<AppData>, params: web::Path<i32>) -> ioResult<impl Responder> {
+    let id = params.into_inner();
+    let db = db.database.lock().unwrap();
+    
+    let result = db.execute("DELETE FROM users WHERE id = ?1", [id]);
+
+    match result {
+        Ok(rows_affected) => {
+            if rows_affected > 0 {
+                Ok(HttpResponse::Ok().json(serde_json::json!({
+                    "success": true,
+                    "message": format!("Record with id {} deleted successfully", id),
+                })))
+            } else {
+                Ok(HttpResponse::NotFound().json(serde_json::json!({
+                    "success": false,
+                    "message": format!("No record found with id: {}", id),
+                })))
+            }
+        },
+        Err(err) => Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+            "success": false,
+            "message": format!("Database error: {}", err),
+        })))
     }
 }
