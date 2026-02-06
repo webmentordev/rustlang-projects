@@ -77,7 +77,7 @@ fn main() {
                     .unwrap();
                 println!("✅ Task has been added!");
             }
-            "delete" => {
+            "delete" | "del" => {
                 if args.len() < 3 {
                     println!("❌ Please provide a task ID to delete");
                     return;
@@ -98,7 +98,7 @@ fn main() {
                     println!("❌ No task found with ID {}", id);
                 }
             }
-            "complete" => {
+            "complete" | "done" => {
                 if args.len() < 3 {
                     println!("❌ Please provide a task ID to complete");
                     return;
