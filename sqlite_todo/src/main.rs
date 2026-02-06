@@ -1,5 +1,6 @@
+use dirs;
 use rusqlite::Connection;
-use std::{env, path::Path};
+use std::env;
 
 struct Todo {
     id: usize,
@@ -11,9 +12,13 @@ struct Todo {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let db_file = Path::new("/home/ahmer/todos.db").exists();
+    let db_path = dirs::home_dir()
+        .expect("Could not determine home directory")
+        .join("todos.db");
+
+    let db_file = db_path.exists();
     if !db_file {
-        let conn = Connection::open("/home/ahmer/todos.db").unwrap();
+        let conn = Connection::open(&db_path).unwrap();
         let sql_query = "
         CREATE TABLE IF NOT EXISTS todos(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -23,13 +28,13 @@ fn main() {
             completed_at TIMESTAMP NULL
         )";
         match conn.execute(sql_query, []) {
-            Ok(_stmt) => println!("🚀 Database has been created!"),
+            Ok(_stmt) => println!("🚀 Database has been created at: {:?}", db_path),
             Err(e) => println!("Error creating new DB: {e}"),
         }
         return;
     }
 
-    let conn = Connection::open("/home/ahmer/todos.db").unwrap();
+    let conn = Connection::open(&db_path).unwrap();
     if args.len() == 1 {
         let select_sql_query =
             "SELECT id, task, completed, created_at, completed_at from todos ORDER BY id DESC";

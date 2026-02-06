@@ -1,4 +1,4 @@
-SQLite DB will be stored in /tmp/todos.db
+SQLite DB (todos.db) will be stored in the Home directory of the user
 
 Make sure to assign +x to the executable
 ```
