@@ -6,11 +6,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let current_path = env::current_dir()?;
     let mut files = vec![];
 
-    println!("Which format would you like to print in? json, js, php");
+    println!("Which format would you like to print in? json, js, php, any");
     let mut convert_type = String::new();
     io::stdin()
         .read_line(&mut convert_type)
-        .expect("Return data type is required. json, js, php");
+        .expect("Return data type is required. json, js, php, any");
     let convert_type = convert_type.trim();
 
     for entry in fs::read_dir(&current_path)? {
@@ -25,7 +25,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match convert_type {
         "json" | "php" => print_json(&files),
-        _ => print_js(&files),
+        "js" => print_js(&files),
+        _ => print_items(&files),
     }
 
     Ok(())
@@ -53,4 +54,11 @@ fn print_js(array: &[String]) {
         }
     }
     println!("}}");
+}
+
+fn print_items(array: &[String]) {
+    println!("📄 Files:\n----");
+    for item in array {
+        println!("{}", item);
+    }
 }
