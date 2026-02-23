@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Realtime Chat App in TCP</title>
+</head>
+
+<body>
+    <button onclick="getData()">Fetch data</button>
+</body>
+<script>
+    function getData() {
+        var sse = new EventSource("http://127.0.0.1:7688");
+        sse.onmessage = function (event) {
+            console.log(event.data);
+        }
+        sse.addEventListener("done", function () {
+            sse.close();
+        });
+    }
+</script>
+
+</html>
