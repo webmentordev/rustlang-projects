@@ -1,0 +1,27 @@
+Rust’s standard collection library provides efficient implementations of the most common general purpose programming data structures. By using the standard implementations, it should be possible for two libraries to communicate without significant data conversion.
+
+To get this out of the way: you should probably just use Vec or HashMap. These two collections cover most use cases for generic data storage and processing. They are exceptionally good at doing what they do. All the other collections in the standard library have specific use cases where they are the optimal choice, but these cases are borderline niche in comparison. Even when Vec and HashMap are technically suboptimal, they’re probably a good enough choice to get started.
+
+Rust’s collections can be grouped into four major categories:
+
+Sequences: Vec, VecDeque, LinkedList
+Maps: HashMap, BTreeMap
+Sets: HashSet, BTreeSet
+Misc: BinaryHeap
+
+Choosing the right collection for the job requires an understanding of what each collection is good at. Here we briefly summarize the performance of different collections for certain important operations. For further details, see each type’s documentation, and note that the names of actual methods may differ from the tables below on certain collections.
+
+Throughout the documentation, we will adhere to the following conventions for operation notation:
+
+The collection’s size is denoted by n.
+If a second collection is involved, its size is denoted by m.
+Item indices are denoted by i.
+Operations which have an amortized cost are suffixed with a *.
+Operations with an expected cost are suffixed with a ~.
+Calling operations that add to a collection will occasionally require a collection to be resized - an extra operation that takes O(n) time.
+
+Amortized costs are calculated to account for the time cost of such resize operations over a sufficiently large series of operations. An individual operation may be slower or faster due to the sporadic nature of collection resizing, however the average cost per operation will approach the amortized cost.
+
+Rust’s collections never automatically shrink, so removal operations aren’t amortized.
+
+HashMap uses expected costs. It is theoretically possible, though very unlikely, for HashMap to experience significantly worse performance than the expected cost. This is due to the probabilistic nature of hashing - i.e. it is possible to generate a duplicate hash given some input key that will require extra computation to correct.
