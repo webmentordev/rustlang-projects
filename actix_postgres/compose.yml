@@ -1,0 +1,24 @@
+services:
+  db_sqlx:
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_DB: sqlx
+      POSTGRES_USER: sqlx
+      POSTGRES_PASSWORD: 'mypassword123'
+    ports:
+      - 5436:5432
+    volumes:
+      - ./sqlx_db:/var/lib/postgresql
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    restart: always
+    depends_on:
+      - db_sqlx
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - 8005:80
+volumes:
+  sqlx_db:

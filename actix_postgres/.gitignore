@@ -1,0 +1,4 @@
+/target
+/sqlx_db
+.env
+/Cargo.lock
