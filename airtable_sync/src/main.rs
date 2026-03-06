@@ -1,11 +1,12 @@
 use actix_web::{App, HttpResponse, HttpServer, web};
+use r2d2::Pool;
+use r2d2_sqlite::SqliteConnectionManager;
 use rand::Rng;
 use reqwest;
-use rusqlite::{Connection, params};
+use rusqlite::params;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
-use std::sync::Mutex;
 use std::time::Duration;
 
 const SYNC_INTERVAL_SECONDS: u64 = 7200;
@@ -22,6 +23,8 @@ const ALLOWED_FIELDS: &[&str] = &[
     "Call Status",
     // Add or remove colum names
 ];
+
+type DbPool = Pool<SqliteConnectionManager>;
 
 #[derive(Debug, Deserialize)]
 struct AirtableResponse {
@@ -63,15 +66,7 @@ fn generate_slug(full_name: &str) -> String {
     let slug_base = full_name
         .to_lowercase()
         .chars()
-        .map(|c| {
-            if c.is_alphanumeric() {
-                c
-            } else if c.is_whitespace() {
-                '-'
-            } else {
-                '-'
-            }
-        })
+        .map(|c| if c.is_alphanumeric() { c } else { '-' })
         .collect::<String>()
         .split('-')
         .filter(|s| !s.is_empty())
@@ -93,9 +88,7 @@ fn filter_fields(fields: &HashMap<String, Value>) -> HashMap<String, Value> {
     }
 }
 
-async fn sync_airtable_data(
-    db: web::Data<Mutex<Connection>>,
-) -> Result<(), Box<dyn std::error::Error>> {
+async fn sync_airtable_data(pool: web::Data<DbPool>) -> Result<(), Box<dyn std::error::Error>> {
     let airtable_token =
         std::env::var("AIRTABLE_TOKEN").expect("AIRTABLE_TOKEN environment variable not set");
     let airtable_url =
@@ -104,6 +97,7 @@ async fn sync_airtable_data(
     let client = reqwest::Client::new();
     let mut all_records = Vec::new();
     let mut offset: Option<String> = None;
+
     loop {
         let mut url = format!("{}?pageSize=100", airtable_url);
         if let Some(ref offset_value) = offset {
@@ -125,7 +119,7 @@ async fn sync_airtable_data(
 
     println!("Finished fetching. Total records: {}", all_records.len());
 
-    let conn = db.lock().unwrap();
+    let conn = pool.get()?;
 
     conn.execute(
         "CREATE TABLE IF NOT EXISTS airtable_records (
@@ -140,7 +134,6 @@ async fn sync_airtable_data(
     for record in &all_records {
         let fields_json = serde_json::to_string(&record.fields)?;
 
-        // Extract Column from fields and generate slug for uniqe data fetching
         let full_name = record
             .fields
             .get("Name")
@@ -160,7 +153,7 @@ async fn sync_airtable_data(
 }
 
 async fn get_records(
-    db: web::Data<Mutex<Connection>>,
+    pool: web::Data<DbPool>,
     query: web::Query<HashMap<String, String>>,
 ) -> HttpResponse {
     let page = query
@@ -175,16 +168,17 @@ async fn get_records(
 
     let offset = (page - 1) * page_size;
 
-    let conn = match db.lock() {
+    let conn = match pool.get() {
         Ok(c) => c,
         Err(e) => {
             return HttpResponse::InternalServerError().json(serde_json::json!({
-                "message": format!("Database lock error: {}", e),
+                "message": format!("Failed to get DB connection from pool: {}", e),
                 "status": "error",
             }));
         }
     };
-    let total: usize = match conn.query_row("SELECT COUNT(*) FROM airtable_records", [], |row| {
+
+    let total: i64 = match conn.query_row("SELECT COUNT(*) FROM airtable_records", [], |row| {
         row.get(0)
     }) {
         Ok(count) => count,
@@ -195,6 +189,7 @@ async fn get_records(
             }));
         }
     };
+
     let mut stmt = match conn
         .prepare("SELECT id, created_time, fields, slug FROM airtable_records LIMIT ?1 OFFSET ?2")
     {
@@ -207,14 +202,13 @@ async fn get_records(
         }
     };
 
-    let records_iter = match stmt.query_map(params![page_size, offset], |row| {
+    let records_iter = match stmt.query_map(params![page_size as i64, offset as i64], |row| {
         let id: String = row.get(0)?;
         let created_time: String = row.get(1)?;
         let fields_json: String = row.get(2)?;
         let slug: String = row.get(3)?;
         let fields: HashMap<String, Value> =
             serde_json::from_str(&fields_json).unwrap_or_else(|_| HashMap::new());
-
         Ok((id, created_time, fields, slug))
     }) {
         Ok(iter) => iter,
@@ -239,6 +233,7 @@ async fn get_records(
         }
     }
 
+    let total = total as usize;
     let total_pages = (total + page_size - 1) / page_size;
     let remaining = if offset + records.len() < total {
         total - (offset + records.len())
@@ -256,15 +251,12 @@ async fn get_records(
     })
 }
 
-async fn get_single_record(
-    db: web::Data<Mutex<Connection>>,
-    slug: web::Path<String>,
-) -> HttpResponse {
-    let conn = match db.lock() {
+async fn get_single_record(pool: web::Data<DbPool>, slug: web::Path<String>) -> HttpResponse {
+    let conn = match pool.get() {
         Ok(c) => c,
         Err(e) => {
             return HttpResponse::InternalServerError().json(serde_json::json!({
-                "message": format!("Database lock error: {}", e),
+                "message": format!("Failed to get DB connection from pool: {}", e),
                 "status": "error",
             }));
         }
@@ -289,7 +281,6 @@ async fn get_single_record(
         let slug: String = row.get(3)?;
         let fields: HashMap<String, Value> =
             serde_json::from_str(&fields_json).unwrap_or_else(|_| HashMap::new());
-
         Ok((id, created_time, fields, slug))
     });
 
@@ -319,11 +310,11 @@ async fn get_single_record(
     }
 }
 
-async fn start_background_sync(db: web::Data<Mutex<Connection>>) {
+async fn start_background_sync(pool: web::Data<DbPool>) {
     actix_web::rt::spawn(async move {
         loop {
             println!("Starting Airtable sync...");
-            match sync_airtable_data(db.clone()).await {
+            match sync_airtable_data(pool.clone()).await {
                 Ok(_) => println!("Airtable sync completed successfully"),
                 Err(e) => eprintln!("Airtable sync failed: {}", e),
             }
@@ -342,16 +333,20 @@ async fn start_background_sync(db: web::Data<Mutex<Connection>>) {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv::dotenv().ok();
-    let conn = Connection::open("records.db")
+
+    let manager = SqliteConnectionManager::file("records.db");
+    let pool = Pool::builder()
+        .max_size(10)
+        .build(manager)
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
 
-    let db = web::Data::new(Mutex::new(conn));
+    let pool_data = web::Data::new(pool);
 
-    start_background_sync(db.clone()).await;
+    start_background_sync(pool_data.clone()).await;
 
     HttpServer::new(move || {
         App::new()
-            .app_data(db.clone())
+            .app_data(pool_data.clone())
             .route("/", web::get().to(index))
             .route("/records", web::get().to(get_records))
             .route("/record/{slug}", web::get().to(get_single_record))
