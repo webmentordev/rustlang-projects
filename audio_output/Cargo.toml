@@ -1,0 +1,11 @@
+[package]
+name = "audio_output"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ctrlc = { version = "3", features = ["termination"] }
+cpal = "0.15"
+nnnoiseless = "0.5"
+clap = { version = "4", features = ["derive"] }
+libc = "0.2"
