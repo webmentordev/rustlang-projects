@@ -1,0 +1,14 @@
+services:
+  axum_db:
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_DB: axum_db
+      POSTGRES_USER: axum
+      POSTGRES_PASSWORD: 'myyppooswward'
+    ports:
+      - 5432:5432
+    volumes:
+      - ./db_axum:/var/lib/postgresql
+volumes:
+  db_axum:
