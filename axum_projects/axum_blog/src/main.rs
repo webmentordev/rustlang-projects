@@ -1,6 +1,7 @@
+use async_trait::async_trait;
 use axum::{
     Json, Router,
-    extract::{Multipart, Path, State},
+    extract::{FromRequestParts, Multipart, Path, State},
     http::StatusCode,
     routing::{get, post},
 };
@@ -10,6 +11,9 @@ use sqlx::postgres::PgPoolOptions;
 use std::{env, net::SocketAddr};
 use tokio::fs;
 use tower_http::services::ServeDir;
+
+#[derive(Clone)]
+struct AppState(sqlx::PgPool, String);
 
 #[derive(Deserialize, Serialize, sqlx::FromRow)]
 struct Blog {
@@ -29,16 +33,55 @@ struct Response {
     message: String,
 }
 
+struct ValidatedAuth;
+
+#[async_trait]
+impl<S> FromRequestParts<S> for ValidatedAuth
+where
+    S: Send + Sync,
+{
+    type Rejection = StatusCode;
+
+    async fn from_request_parts(
+        parts: &mut axum::http::request::Parts,
+        _state: &S,
+    ) -> Result<Self, Self::Rejection> {
+        let state = parts
+            .extensions
+            .get::<AppState>()
+            .cloned()
+            .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+
+        let auth_header = parts
+            .headers
+            .get("Authorization")
+            .and_then(|h| h.to_str().ok())
+            .ok_or(StatusCode::UNAUTHORIZED)?;
+
+        let token = auth_header
+            .strip_prefix("Bearer ")
+            .ok_or(StatusCode::UNAUTHORIZED)?;
+
+        if token == state.secret_token.as_ref() {
+            Ok(ValidatedAuth)
+        } else {
+            Err(StatusCode::FORBIDDEN)
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() {
     dotenvy::dotenv().unwrap();
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL not found!");
+    let secret_token = env::var("SECRET_TOKEN").expect("SECRET_TOKEN not found!");
     let pool = PgPoolOptions::new()
         .max_connections(100) // tune based on your postgres server's max_connections
         .min_connections(10)
+        .acquire_timeout(std::time::Duration::from_secs(5))
         .connect(&database_url)
         .await
-        .unwrap();
+        .expect("Could not connect to the database.");
 
     sqlx::query(
         "CREATE TABLE IF NOT EXISTS blogs (
@@ -67,15 +110,15 @@ async fn main() {
         .nest("/api", api_route)
         .nest("/admin", admin_routes)
         .nest_service("/uploads", ServeDir::new("./uploads"))
-        .with_state(pool);
+        .with_state(AppState(pool, secret_token));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
-    println!("🚀 Server running at http://{}", addr);
+    eprintln!("🚀 Server running at http://{}", addr);
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn get_blogs(State(pool): State<sqlx::PgPool>) -> Json<Vec<Blog>> {
+async fn get_blogs(State(AppState(pool, _token)): State<AppState>) -> Json<Vec<Blog>> {
     let results = sqlx::query_as::<_, Blog>(
         "SELECT title, slug, content, description, is_published, created_at, updated_at, small_thumbnail, large_thumbnail FROM blogs",
     )
@@ -87,7 +130,7 @@ async fn get_blogs(State(pool): State<sqlx::PgPool>) -> Json<Vec<Blog>> {
 
 async fn get_blog(
     Path(slug): Path<String>,
-    State(pool): State<sqlx::PgPool>,
+    State(AppState(pool, _token)): State<AppState>,
 ) -> Result<Json<Blog>, StatusCode> {
     let result = sqlx::query_as::<_, Blog>(
         "SELECT title, slug, content, description, is_published, created_at, updated_at, small_thumbnail, large_thumbnail FROM blogs WHERE slug = $1",
@@ -104,7 +147,8 @@ async fn get_blog(
 }
 
 async fn write_blog(
-    State(pool): State<sqlx::PgPool>,
+    _auth: ValidatedAuth,
+    State(AppState(pool, _token)): State<AppState>,
     mut multipart: Multipart,
 ) -> Result<Json<Response>, StatusCode> {
     let mut title = String::new();
