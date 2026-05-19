@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use axum::{
     Json, Router,
     extract::{FromRequestParts, Multipart, Path, State},
@@ -35,7 +34,7 @@ struct Response {
 
 struct ValidatedAuth;
 
-#[async_trait]
+// #[async_trait] Not required anymore
 impl<S> FromRequestParts<S> for ValidatedAuth
 where
     S: Send + Sync,
@@ -62,7 +61,7 @@ where
             .strip_prefix("Bearer ")
             .ok_or(StatusCode::UNAUTHORIZED)?;
 
-        if token == state.secret_token.as_ref() {
+        if token == state.1 {
             Ok(ValidatedAuth)
         } else {
             Err(StatusCode::FORBIDDEN)
