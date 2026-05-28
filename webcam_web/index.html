@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webcam Stream</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 32px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 24px;
+            color: #333;
+            font-size: 28px;
+        }
+
+        .stream-container {
+            width: 100%;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        #stream {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .status.connected {
+            color: #4caf50;
+        }
+
+        .status.disconnected {
+            color: #f44336;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>📹 Webcam Stream</h1>
+        <div class="stream-container">
+            <img id="stream" src="/stream" alt="Webcam stream">
+        </div>
+        <div class="status connected" id="status">Connected ✓</div>
+    </div>
+
+    <script>
+        const streamImg = document.getElementById('stream');
+        const statusEl = document.getElementById('status');
+
+        streamImg.onerror = function () {
+            statusEl.textContent = 'Disconnected ✗';
+            statusEl.className = 'status disconnected';
+            setTimeout(() => {
+                streamImg.src = '/stream?' + new Date().getTime();
+            }, 2000);
+        };
+        streamImg.onload = function () {
+            statusEl.textContent = 'Connected ✓';
+            statusEl.className = 'status connected';
+        };
+    </script>
+</body>
+
+</html>
