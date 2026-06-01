@@ -1,0 +1,14 @@
+services:
+  db_sqlx_tst:
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_DB: axum_db
+      POSTGRES_USER: axum
+      POSTGRES_PASSWORD: 'mypasswor1235123'
+    ports:
+      - 5444:5432
+    volumes:
+      - ./db_sqlx_tst:/var/lib/postgresql
+volumes:
+  db_sqlx_tst:
