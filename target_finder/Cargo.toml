@@ -1,0 +1,17 @@
+[package]
+name = "target_finder"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+
+[[bin]]
+name = "target_finder"
+path = "src/main.rs"
+
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
