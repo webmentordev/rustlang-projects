@@ -511,7 +511,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "totp_generator"
+name = "totp_generator_with_qr"
 version = "0.1.0"
 dependencies = [
  "base64",

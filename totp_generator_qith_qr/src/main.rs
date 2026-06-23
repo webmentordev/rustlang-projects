@@ -9,11 +9,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         6,
         1,
         30,
-        Secret::Encoded("KRSXG5CTMVRXEZLUKN2XAZLSKNSWG4TFOQ".to_string())
+        Secret::Encoded("TYFF7ZVIMWJJCULJNZVOZ3SJZI".to_string())
             .to_bytes()
             .unwrap(),
-        Some("Github".to_string()),
-        "ahmerdev@github.com".to_string(),
+        Some("MyApp".to_string()),
+        "ahmerdev@myapp.com".to_string(),
     )?;
 
     let qr_base64 = totp.get_qr_base64()?;
