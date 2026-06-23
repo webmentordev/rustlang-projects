@@ -1,0 +1,15 @@
+{
+    "username": "coder123",
+    "age": 28,
+    "is_active": true,
+    "skills": [
+        "Python",
+        "JavaScript",
+        "SQL"
+    ],
+    "address": {
+        "city": "Multan",
+        "country": "Pakistan"
+    },
+    "subscription_end": null
+}
