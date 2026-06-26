@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Chat</title>
+    <style>
+        body {
+            font-family: Arial;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+
+        .container {
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        input {
+            padding: 8px;
+            margin: 5px;
+        }
+
+        #status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        #log {
+            border: 1px solid #ddd;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            background: #f9f9f9;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Voice Chat</h1>
+        <div>
+            <label>Room:</label>
+            <input type="text" id="roomId" value="room-123">
+            <button id="connectBtn">Connect</button>
+            <button id="startBtn" disabled>Start</button>
+            <button id="stopBtn" disabled>Stop</button>
+            <button id="disconnectBtn" disabled>Disconnect</button>
+        </div>
+        <div id="status" class="disconnected">Disconnected</div>
+        <div id="log"></div>
+    </div>
+
+    <script>
+        const roomInput = document.getElementById('roomId');
+        const connectBtn = document.getElementById('connectBtn');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const statusDiv = document.getElementById('status');
+        const logDiv = document.getElementById('log');
+
+        let ws = null;
+        let mediaStream = null;
+        let audioContext = null;
+        let processor = null;
+        let source = null;
+
+        function log(msg) {
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<p>[${time}] ${msg}</p>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function setStatus(connected) {
+            if (connected) {
+                statusDiv.textContent = 'Connected';
+                statusDiv.className = 'connected';
+                connectBtn.disabled = true;
+                startBtn.disabled = false;
+                disconnectBtn.disabled = false;
+            } else {
+                statusDiv.textContent = 'Disconnected';
+                statusDiv.className = 'disconnected';
+                connectBtn.disabled = false;
+                startBtn.disabled = true;
+                stopBtn.disabled = true;
+                disconnectBtn.disabled = true;
+            }
+        }
+
+        connectBtn.addEventListener('click', () => {
+            const room = roomInput.value.trim();
+            if (!room) return log('Enter room ID');
+
+            ws = new WebSocket(`ws://localhost:3939/ws/${room}`);
+            ws.binaryType = 'arraybuffer';
+
+            ws.onopen = () => {
+                log(`Connected to ${room}`);
+                setStatus(true);
+            };
+
+            ws.onmessage = (evt) => {
+                if (evt.data instanceof ArrayBuffer) {
+                    playPCM(evt.data);
+                }
+            };
+
+            ws.onclose = () => {
+                log('Disconnected');
+                setStatus(false);
+            };
+
+            ws.onerror = (err) => {
+                log('Error: ' + err);
+            };
+        });
+
+        startBtn.addEventListener('click', async () => {
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+                source = audioContext.createMediaStreamSource(mediaStream);
+                processor = audioContext.createScriptProcessor(4096, 1, 1);
+
+                processor.onaudioprocess = (e) => {
+                    const input = e.inputBuffer.getChannelData(0);
+                    const pcm = new Int16Array(input.length);
+
+                    for (let i = 0; i < input.length; i++) {
+                        const s = Math.max(-1, Math.min(1, input[i]));
+                        pcm[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                    }
+
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(pcm.buffer);
+                    }
+                };
+
+                source.connect(processor);
+                processor.connect(audioContext.destination);
+
+                log('Recording...');
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+            } catch (e) {
+                log('Mic error: ' + e.message);
+            }
+        });
+
+        stopBtn.addEventListener('click', () => {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(t => t.stop());
+            }
+            if (processor) {
+                processor.disconnect();
+            }
+            if (source) {
+                source.disconnect();
+            }
+            log('Stopped');
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+        });
+
+        disconnectBtn.addEventListener('click', () => {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(t => t.stop());
+            }
+            if (ws) {
+                ws.close();
+            }
+            setStatus(false);
+        });
+
+        function playPCM(buffer) {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            const pcm = new Int16Array(buffer);
+            const audio = audioContext.createBuffer(1, pcm.length, audioContext.sampleRate);
+            const chan = audio.getChannelData(0);
+
+            for (let i = 0; i < pcm.length; i++) {
+                chan[i] = pcm[i] / 32768;
+            }
+
+            const src = audioContext.createBufferSource();
+            src.buffer = audio;
+            src.connect(audioContext.destination);
+            src.start(0);
+        }
+
+        setStatus(false);
+    </script>
+</body>
+
+</html>
