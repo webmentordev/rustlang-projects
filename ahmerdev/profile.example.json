@@ -1,0 +1,65 @@
+{
+    "name": "Your Name",
+    "profession": "Profession like Software Engineer",
+    "work": "Specializing in full stack web development",
+    "address": "",
+    "phone": "",
+    "email": "",
+    "dob": "",
+    "summary": "",
+    "avatar_url": "",
+    "socials": [
+        {
+            "title": "LinkedIn",
+            "text": "",
+            "link": "",
+            "icon_url": ""
+        }
+    ],
+    "skills": [
+        {
+            "tags": "Laravel, Livewire, PHP",
+            "level": "Expert"
+        },
+        {
+            "tags": "VueJS, Nuxt, JS",
+            "level": "Expert"
+        }
+    ],
+    "work_experience": [
+        {
+            "org": "Microsoft",
+            "designation": "Software Engineer",
+            "location": "",
+            "start": "",
+            "end": "Present",
+            "type": "Full time",
+            "summary": ""
+        }
+    ],
+    "projects": [
+        {
+            "title": "Freshaly E-commerce Platform",
+            "stack": "Rust • CLI • Actix • Linux",
+            "start": "2024",
+            "end": "Present",
+            "summary": "Online grocery delivery platform with full-stack development and API integration.",
+            "github_link": "",
+            "working_link": "",
+            "summary_points": [
+                "Developed RESTful APIs",
+                "Built React frontend"
+            ]
+        }
+    ],
+    "education": [
+        {
+            "institute": "KIPs College, Multan",
+            "degree": "Computer Science",
+            "location": "Multan",
+            "start": "May 1996",
+            "end": "June 1996",
+            "summary": "Computer, Physics"
+        }
+    ]
+}

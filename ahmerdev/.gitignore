@@ -1,0 +1,8 @@
+/target
+/profile.json
+.env
+database.sqlite
+*.png
+*.jpeg
+*.jpg
+/assets/*
