@@ -1,3 +1,3 @@
 #!/bin/bash
 
-cd ui && npx nuxi generate && cd .. && cargo run -- serve
+cd ui && npx nuxi generate && cd .. && sleep 1 && cargo run

@@ -1,5 +1,9 @@
 <template>
-    <div class="max-w-2xl w-full mx-auto mb-3 pt-3 pb-5 bg-white">
+    <div class="max-w-2xl w-full mx-auto mb-3 pt-3 pb-5 bg-white" v-if="record">
+        <NuxtLink to="/tasks"
+            class="py-2 flex items-center justify-center px-4 rounded-lg m-auto bg-black text-white font-semibold mb-4 w-fit">
+            Daily tasks
+        </NuxtLink>
         <img :src="record.avatar_url" alt="Profile pic" class="rounded-full m-auto mb-2 w-25 h-25 object-cover">
         <div class="text-center pb-0 mb-3">
             <h1 class="text-xl font-bold tracking-wide uppercase mb-1">{{ record.name }}</h1>
@@ -94,18 +98,24 @@
                 <div class="text-sm">{{ education.summary }}</div>
             </div>
         </div>
-        <button class="py-2 px-4 bg-black rounded-lg text-white font-bold cursor-pointer" @click="refresh_data()">{{
+        <button class="py-2 px-4 bg-black rounded-lg text-white font-semibold cursor-pointer" @click="refresh_data()">{{
             processing ?
                 'Fetching...' : 'Update data' }}</button>
     </div>
 </template>
 <script setup lang="js">
-const record = ref({});
+const record = ref(null);
 const processing = ref(false);
+const avatar = ref(null);
 
 try {
     const { data } = await useFetch("/api/info/get");
     record.value = data.value.data;
+    avatar.value = data.value.data.avatar_url;
+    localStorage.setItem('avatar', JSON.stringify({
+        "avatar": avatar.value,
+        "name": data.value.data.nickname
+    }));
 } catch (e) {
     console.log(e);
 }
@@ -117,6 +127,11 @@ async function refresh_data() {
             method: "POST"
         });
         record.value = data.data;
+        avatar.value = data.data.avatar_url;
+        localStorage.setItem('avatar', JSON.stringify({
+            "avatar": avatar.value,
+            "name": data.data.nickname
+        }));
     } catch (e) {
         console.log(e);
     } finally {

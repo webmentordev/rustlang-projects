@@ -8,6 +8,7 @@ use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
 use std::{env, time};
 use tokio::fs;
+use tower_http::cors::CorsLayer;
 use tower_http::services::ServeDir;
 
 use axum::{
@@ -20,7 +21,7 @@ use axum::{
 use mime_guess;
 
 #[derive(RustEmbed)]
-#[folder = "ui/dist"]
+#[folder = "ui/.output/public"]
 struct Asset;
 
 #[derive(Clone)]
@@ -116,6 +117,7 @@ async fn main() {
         pool: pool,
     };
 
+    let cors = CorsLayer::permissive();
     let info_routes = Router::new()
         .route("/get", get(get_info))
         .route("/update", post(update_info));
@@ -132,6 +134,7 @@ async fn main() {
         .nest_service("/assets", ServeDir::new("assets"))
         .nest("/api", api_routes)
         .with_state(appstate)
+        .layer(cors)
         .fallback(serve_embedded_file);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8787));
@@ -197,7 +200,7 @@ async fn update_info(State(state): State<AppState>) -> impl IntoResponse {
 }
 
 async fn get_notes(State(state): State<AppState>) -> impl IntoResponse {
-    let records = match sqlx::query_as::<_, NoteResponse>("SELECT * FROM notes")
+    let records = match sqlx::query_as::<_, NoteResponse>("SELECT * FROM notes ORDER BY id DESC")
         .fetch_all(&state.pool)
         .await
     {
@@ -259,7 +262,8 @@ async fn create_note(
     (
         StatusCode::OK,
         Json(json!({
-            "message": "Notes created"
+            "message": "Task has been created",
+            "status": 200
         })),
     )
 }
@@ -306,7 +310,8 @@ async fn update_note(
     (
         StatusCode::CREATED,
         Json(json!({
-            "message": "Notes updated!"
+            "message": "Task has been updated!",
+            "status": 200
         })),
     )
 }
@@ -353,7 +358,8 @@ async fn update_note_status(
     (
         StatusCode::OK,
         Json(json!({
-            "message": "Notes status updated!"
+            "message": "Task status has been updated!",
+            "status": 200
         })),
     )
 }
@@ -398,7 +404,8 @@ async fn delete_note(
     (
         StatusCode::OK,
         Json(json!({
-            "message": "Notes deleted"
+            "message": "Task has been deleted",
+            "status": 200
         })),
     )
 }
