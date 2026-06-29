@@ -109,7 +109,7 @@ const processing = ref(false);
 const avatar = ref(null);
 
 try {
-    const { data } = await useFetch("/api/info/get");
+    const { data } = await useFetch("http://127.0.0.1:8787/api/info/get");
     record.value = data.value.data;
     avatar.value = data.value.data.avatar_url;
     localStorage.setItem('avatar', JSON.stringify({
@@ -123,7 +123,7 @@ try {
 async function refresh_data() {
     try {
         processing.value = true;
-        const data = await $fetch("/api/info/update", {
+        const data = await $fetch("http://127.0.0.1:8787/api/info/update", {
             method: "POST"
         });
         record.value = data.data;

@@ -33,11 +33,7 @@ struct AppState {
 #[derive(Deserialize, Serialize)]
 struct NoteRequest {
     summary: String,
-}
-
-#[derive(Deserialize, Serialize)]
-struct NoteStatusRequest {
-    is_completed: bool,
+    is_completed: Option<bool>,
 }
 
 #[derive(Deserialize, Serialize, sqlx::FromRow)]
@@ -125,7 +121,6 @@ async fn main() {
         .route("/get", get(get_notes))
         .route("/create", post(create_note))
         .route("/update/{id}", patch(update_note))
-        .route("/update-status/{id}", patch(update_note_status))
         .route("/delete/{id}", delete(delete_note));
     let api_routes = Router::new()
         .nest("/info", info_routes)
@@ -285,8 +280,9 @@ async fn update_note(
             );
         }
     };
-    if sqlx::query("UPDATE notes SET summary = ? WHERE id = ?")
+    if sqlx::query("UPDATE notes SET summary = ?, is_completed = ? WHERE id = ?")
         .bind(&payload.summary)
+        .bind(&payload.is_completed)
         .bind(&id)
         .execute(&mut *tx)
         .await
@@ -311,54 +307,6 @@ async fn update_note(
         StatusCode::CREATED,
         Json(json!({
             "message": "Task has been updated!",
-            "status": 200
-        })),
-    )
-}
-
-async fn update_note_status(
-    ValidToken: ValidToken,
-    State(state): State<AppState>,
-    Path(id): Path<i32>,
-    Json(payload): Json<NoteStatusRequest>,
-) -> impl IntoResponse {
-    let mut tx = match state.pool.begin().await {
-        Ok(tx) => tx,
-        Err(_) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({
-                    "message": "Something went wrong!"
-                })),
-            );
-        }
-    };
-    if sqlx::query("UPDATE notes SET is_completed = ? WHERE id = ?")
-        .bind(&payload.is_completed)
-        .bind(&id)
-        .execute(&mut *tx)
-        .await
-        .is_err()
-    {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({
-                "message": "Something went wrong!"
-            })),
-        );
-    }
-    if tx.commit().await.is_err() {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({
-                "message": "Something went wrong!"
-            })),
-        );
-    }
-    (
-        StatusCode::OK,
-        Json(json!({
-            "message": "Task status has been updated!",
             "status": 200
         })),
     )
