@@ -73,7 +73,7 @@ await fetchNotes();
 
 async function fetchNotes() {
     try {
-        const data = await $fetch("http://127.0.0.1:8787/api/notes/get");
+        const data = await $fetch("/api/notes/get");
         records.value = data.data;
     } catch (e) {
         console.log(e);
@@ -84,7 +84,7 @@ async function task_create() {
     try {
         processing.value = true;
         success_message.value = "";
-        const data = await $fetch("http://127.0.0.1:8787/api/notes/create", {
+        const data = await $fetch("/api/notes/create", {
             method: "POST",
             headers: {
                 "Authorization": "Bearer " + token.value

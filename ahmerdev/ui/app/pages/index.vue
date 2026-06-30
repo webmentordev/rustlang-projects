@@ -12,6 +12,7 @@
             <div class="text-xs font-semibold uppercase tracking-widest mb-1 text-gray-700">{{ record.work }}</div>
             <div class="text-xs text-gray-600 mb-1">{{ record.phone }} • {{ record.address }} • {{ record.email }}
             </div>
+            <div class="text-xs text-gray-600 mb-1">{{ record.languages }}</div>
             <div v-if="record.dob" class="text-xs text-gray-600">Date of birth - {{ record.dob }}</div>
             <div class="flex m-auto w-fit mt-1">
                 <a :href="social.link" target="_blank" v-if="social in record.socials"
@@ -37,7 +38,7 @@
             <div class="grid grid-cols-2 gap-2 text-sm" v-if="record.skills.length > 0">
                 <div v-for="skill in record.skills">
                     <span class="font-medium">{{ skill.tags }}</span>
-                    <span class="text-xs text-gray-600 ml-1">({{ skill.level }})</span>
+                    <span v-if="skill.level != ''" class="text-xs text-gray-600 ml-1">({{ skill.level }})</span>
                 </div>
             </div>
 
@@ -109,7 +110,7 @@ const processing = ref(false);
 const avatar = ref(null);
 
 try {
-    const { data } = await useFetch("http://127.0.0.1:8787/api/info/get");
+    const { data } = await useFetch("/api/info/get");
     record.value = data.value.data;
     avatar.value = data.value.data.avatar_url;
     localStorage.setItem('avatar', JSON.stringify({
@@ -123,7 +124,7 @@ try {
 async function refresh_data() {
     try {
         processing.value = true;
-        const data = await $fetch("http://127.0.0.1:8787/api/info/update", {
+        const data = await $fetch("/api/info/update", {
             method: "POST"
         });
         record.value = data.data;

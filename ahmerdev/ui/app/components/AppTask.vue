@@ -125,7 +125,7 @@ watchEffect(() => {
 async function delete_task() {
     try {
         processing.value = true;
-        const data = await $fetch("http://127.0.0.1:8787/api/notes/delete/" + props.record.id, {
+        const data = await $fetch("/api/notes/delete/" + props.record.id, {
             method: "DELETE",
             headers: {
                 "Authorization": "Bearer " + props.token
@@ -146,7 +146,7 @@ async function update_task() {
     try {
         processing.value = true;
         success_message.value = "";
-        const data = await $fetch("http://127.0.0.1:8787/api/notes/update/" + props.record.id, {
+        const data = await $fetch("/api/notes/update/" + props.record.id, {
             method: "PATCH",
             headers: {
                 "Authorization": "Bearer " + props.token
