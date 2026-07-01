@@ -74,13 +74,25 @@ where
 #[tokio::main]
 async fn main() {
     dotenvy::dotenv().ok();
+    let database_name = String::from("database.sqlite");
     let content = fs::read_to_string("./profile.json").await.unwrap();
     let json_content = serde_json::from_str::<serde_json::Value>(&content).unwrap();
+
+    if !std::fs::exists(&database_name).unwrap() {
+        println!("Database does not exist!");
+        if let Err(_) = std::fs::File::create(&database_name) {
+            println!("Failed to create the database file: {}", &database_name);
+            return;
+        } else {
+            println!("Database has been created ✔️");
+        }
+    }
+
     let pool = SqlitePoolOptions::new()
         .max_connections(10)
         .min_connections(5)
         .acquire_timeout(time::Duration::from_secs(5))
-        .connect("./database.sqlite")
+        .connect(&database_name)
         .await
         .unwrap();
     let mut tx = pool.begin().await.unwrap();

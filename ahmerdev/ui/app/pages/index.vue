@@ -1,5 +1,5 @@
 <template>
-    <div class="max-w-2xl w-full mx-auto mb-3 pt-3 pb-5 bg-white" v-if="record">
+    <div class="max-w-2xl w-full mx-auto mb-3 pt-3 pb-5 bg-white px-4" v-if="record">
         <NuxtLink to="/tasks"
             class="py-2 flex items-center justify-center px-4 rounded-lg m-auto bg-black text-white font-semibold mb-4 w-fit">
             Daily tasks
@@ -10,7 +10,9 @@
             <div class="text-xs font-semibold uppercase tracking-widest mb-1">{{ record.profession }}</div>
             <div class="w-25 my-2 bg-gray-500 h-px m-auto"></div>
             <div class="text-xs font-semibold uppercase tracking-widest mb-1 text-gray-700">{{ record.work }}</div>
-            <div class="text-xs text-gray-600 mb-1">{{ record.phone }} • {{ record.address }} • {{ record.email }}
+            <div class="text-xs text-gray-600 mb-1"><span v-if="record.phone">{{ record.phone + ' • ' }}</span> <span
+                    v-if="record.address">{{ record.address + ' • ' }}</span><span v-if="record.email">{{ record.email
+                    }}</span>
             </div>
             <div class="text-xs text-gray-600 mb-1">{{ record.languages }}</div>
             <div v-if="record.dob" class="text-xs text-gray-600">Date of birth - {{ record.dob }}</div>
@@ -19,7 +21,6 @@
                     class="text-xs text-blue-600 hover:underline pt-1">
                     <img :src="social.icon_url" width="70" :alt="social.title">
                 </a>
-                <span class="text-gray-600 mx-3">•</span>
             </div>
         </div>
 
@@ -35,7 +36,8 @@
         <div class="mb-12">
             <div class="font-semibold uppercase tracking-widest border-b border-gray-800 pb-2 mb-3">Skills
             </div>
-            <div class="grid grid-cols-2 gap-2 text-sm" v-if="record.skills.length > 0">
+            <div class="grid grid-cols-2 gap-2 text-sm max-main-1:grid-cols-1 max-main-1:gap-4"
+                v-if="record.skills.length > 0">
                 <div v-for="skill in record.skills">
                     <span class="font-medium">{{ skill.tags }}</span>
                     <span v-if="skill.level != ''" class="text-xs text-gray-600 ml-1">({{ skill.level }})</span>
@@ -49,7 +51,7 @@
 
             <div class="mb-2 avoid-break" v-if="record.work_experience.length > 0"
                 v-for="work in record.work_experience">
-                <div class="flex justify-between items-baseline mb-1">
+                <div class="flex justify-between items-baseline mb-1 max-main-1:flex-col">
                     <span class="font-semibold text-sm">{{ work.designation }}</span>
                     <span class="text-xs font-semibold">{{ work.start }} - {{ work.end }} | {{ work.type }}</span>
                 </div>
@@ -62,7 +64,7 @@
             </div>
 
             <div class="mb-2 avoid-break" v-if="record.projects.length > 0" v-for="project in record.projects">
-                <div class="flex justify-between items-baseline mb-1">
+                <div class="flex justify-between items-baseline mb-1 max-main-1:flex-col">
                     <div class="flex items-center gap-2">
                         <span class="font-semibold text-sm">{{ project.title }}</span>
                         <a v-if="project.github_link" :href="project.github_link" target="_blank" class="inline-block">
@@ -79,7 +81,8 @@
                 </div>
                 <div class="text-xs text-gray-600 mb-2">{{ project.stack }}</div>
                 <div class="text-sm mb-1">{{ project.summary }}</div>
-                <ul class="text-sm list-disc list-inside ml-2 space-y-1" v-if="project.summary_points.length > 0">
+                <ul class="text-sm list-disc list-inside ml-2 space-y-1 max-main-3:ml-0"
+                    v-if="project.summary_points.length > 0">
                     <li v-for="line in project.summary_points">{{ line }}</li>
                 </ul>
             </div>
@@ -91,7 +94,7 @@
             </div>
 
             <div class="mb-4 avoid-break" v-for="(education, index) in record.education" :key="index">
-                <div class="flex justify-between items-baseline mb-1">
+                <div class="flex justify-between items-baseline mb-1 max-main-1:flex-col">
                     <span class="font-semibold text-sm">{{ education.degree }}</span>
                     <span class="text-xs font-semibold">{{ education.start }} - {{ education.end }}</span>
                 </div>

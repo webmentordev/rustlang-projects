@@ -1,19 +1,26 @@
 <template>
     <div class="flex flex-col relative group">
         <div class="flex">
-            <img :src="avatar ? avatar.avatar : '/avatar.jpg'" alt="Avatar" class="rounded-full h-11 w-11 object-fill">
+            <img :src="avatar ? avatar.avatar : '/avatar.jpg'" alt="Avatar"
+                class="rounded-full h-11 w-11 object-fill max-main-2:hidden shrink-0">
             <div class="flex flex-col bg-gray-50 rounded-lg border border-gray-200 ml-2 p-3 w-full">
                 <div class="flex items-center gap-2">
-                    <div class="flex items-center">
-                        <h3 class="font-bold">{{ avatar?.name || 'Admin' }}</h3>
-                        <img src="https://api.iconify.design/mage:verified-check-fill.svg?color=%230ac2ff" width="20"
-                            alt="Verified" class="ml-1">
+                    <img :src="avatar ? avatar.avatar : '/avatar.jpg'" alt="Avatar"
+                        class="rounded-full h-10 w-10 object-fill hidden mr-2 max-main-2:flex shrink-0">
+                    <div class="flex items-center max-main-3:flex-col max-main-3:items-start max-main-3:justify-start">
+                        <div class="flex items-center">
+                            <div class="flex items-center">
+                                <h3 class="font-bold">{{ avatar.name || 'Admin' }}</h3>
+                                <img src="https://api.iconify.design/mage:verified-check-fill.svg?color=%230ac2ff"
+                                    width="20" alt="Verified" class="ml-1">
+                            </div>
+                            <span class="text-gray-600 text-sm mx-2">{{ formatDate(record.created_at) }} UTC</span>
+                        </div>
+                        <span v-if="!is_completed"
+                            class="py-0.5 px-2 rounded-full bg-yellow-400/20 border border-yellow-500 text-yellow-700 font-semibold text-[10px]">Pending</span>
+                        <span v-else
+                            class="py-0.5 px-2 rounded-full bg-green-400/20 border border-green-500 text-green-700 font-semibold text-[10px]">Completed</span>
                     </div>
-                    <span class="text-gray-600 text-sm">{{ formatDate(record.created_at) }} UTC</span>
-                    <span v-if="!is_completed"
-                        class="py-0.5 px-2 rounded-full bg-yellow-400/20 border border-yellow-500 text-yellow-700 font-semibold text-[10px]">Pending</span>
-                    <span v-else
-                        class="py-0.5 px-2 rounded-full bg-green-400/20 border border-green-500 text-green-700 font-semibold text-[10px]">Completed</span>
                 </div>
                 <p class="text-gray-600 mt-1 text-sm">{{ summary }}</p>
                 <div v-if="dropdown"

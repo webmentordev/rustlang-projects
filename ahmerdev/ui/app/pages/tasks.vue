@@ -1,9 +1,9 @@
 <template>
     <section class="max-w-2xl m-auto w-full px-4 py-3" v-if="avatar">
         <div class="flex flex-col mb-5 border-b border-gray-200 pb-3">
-            <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center justify-between mb-4 max-main-2:flex-col">
                 <h1 class="font-black text-2xl">Daily tasks progress</h1>
-                <div class="flex items-center">
+                <div class="flex items-center max-main-2:mt-2">
                     <NuxtLink to="/" class="px-4 w-fit">
                         Profile
                     </NuxtLink>
@@ -48,10 +48,13 @@
                 activities, such as what I did today and what I plan to do. If tasks are in a pending state, it means
                 that I am either working on them or they depend on another task that is currently in progress.</p>
         </div>
-        <div class="flex flex-col w-full">
+        <div class="flex flex-col w-full" v-if="records.length">
             <div class="w-full mb-3" v-for="record in records" :key="record.id">
                 <AppTask @task-deleted="taskDeleteHandler" :record="record" :avatar="avatar" :token="token" />
             </div>
+        </div>
+        <div v-else>
+            <p class="text-gray-600">No task exists at the moment.</p>
         </div>
     </section>
 </template>
