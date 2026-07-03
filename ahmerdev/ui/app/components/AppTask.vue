@@ -26,7 +26,7 @@
                 </div>
                 <p class="text-gray-600 mt-1 text-sm">{{ summary }}</p>
                 <div class="flex items-center justify-end text-[10px] pt-2 mt-2 border-t border-gray-200 text-gray-600">
-                    <span class="ml-1">{{ formatDate(record.updated_at) }} UTC</span>
+                    <span class="ml-1" title="Last updated at">{{ formatDate(record.updated_at) }} UTC</span>
                 </div>
                 <div v-if="dropdown"
                     class="fixed z-50 inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
