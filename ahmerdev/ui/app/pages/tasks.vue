@@ -15,7 +15,7 @@
                 </div>
             </div>
             <div v-if="success_message"
-                class="border z-50 bg-white border-green-600 min-w-87.5 text-green-600 rounded-lg fixed bottom-4 left-[40%]">
+                class="border z-50 bg-green-600/30 backdrop-blur-xl border-green-600 min-w-87.5 text-green-600 rounded-lg fixed bottom-4 left-[40%]">
                 <div class="p-4 text-center w-full h-full relative">
                     <button class="absolute top-1 right-1 z-10" @click="success_message = ''">
                         <img src="https://api.iconify.design/basil:cross-solid.svg?color=%23e01b24" width="25px">
@@ -28,6 +28,13 @@
                 <textarea v-model="summary" rows="8"
                     class="border border-gray-200 bg-gray-100 p-3 w-full h-full rounded-lg mb-3"
                     placeholder="Write task summary here..." required></textarea>
+                <select v-model="info_type" required
+                    class="border border-gray-200 bg-gray-100 p-3 w-full rounded-lg mb-3">
+                    <option value="">Please select the task type!</option>
+                    <option value="task">Task</option>
+                    <option value="simple">Simple</option>
+                </select>
+
                 <input type="text" v-model="token" required
                     class="border border-gray-200 bg-gray-100 p-3 w-full h-full rounded-lg mb-3"
                     placeholder="Auth token">
@@ -64,6 +71,7 @@ const avatar = ref(null);
 const create_task = ref(false);
 const token = ref(null);
 const summary = ref(null);
+const info_type = ref("");
 const processing = ref(false);
 const success_message = ref("");
 
@@ -85,6 +93,9 @@ async function fetchNotes() {
 
 async function task_create() {
     try {
+        if (summary.value.trim() == '' || info_type.value == '') {
+            return;
+        }
         processing.value = true;
         success_message.value = "";
         const data = await $fetch("/api/notes/create", {
@@ -93,7 +104,8 @@ async function task_create() {
                 "Authorization": "Bearer " + token.value
             },
             body: {
-                summary: summary.value
+                summary: summary.value,
+                info_type: info_type.value
             }
         });
         if (data.status == 200) {
@@ -101,6 +113,9 @@ async function task_create() {
             localStorage.setItem('auth_token', token.value)
             success_message.value = data.message;
             await fetchNotes();
+            setTimeout(() => {
+                success_message.value = "";
+            }, 3000);
         }
     } catch (e) {
         console.log(e);

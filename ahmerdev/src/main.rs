@@ -34,6 +34,7 @@ struct AppState {
 struct NoteRequest {
     summary: String,
     is_completed: Option<bool>,
+    info_type: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, sqlx::FromRow)]
@@ -41,6 +42,7 @@ struct NoteResponse {
     id: i32,
     summary: String,
     is_completed: bool,
+    info_type: String,
     created_at: NaiveDateTime,
     updated_at: NaiveDateTime,
 }
@@ -118,6 +120,19 @@ async fn main() {
     .execute(&mut *tx)
     .await
     .unwrap();
+
+    let column_exists: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM pragma_table_info('notes') WHERE name = 'info_type'",
+    )
+    .fetch_one(&mut *tx)
+    .await
+    .unwrap();
+    if column_exists == 0 {
+        sqlx::query("ALTER TABLE notes ADD COLUMN info_type VARCHAR(255) NOT NULL DEFAULT 'task'")
+            .execute(&mut *tx)
+            .await
+            .unwrap();
+    }
     tx.commit().await.unwrap();
 
     let appstate = AppState {
@@ -245,8 +260,9 @@ async fn create_note(
             );
         }
     };
-    if sqlx::query("INSERT INTO notes (summary) VALUES (?)")
+    if sqlx::query("INSERT INTO notes (summary, info_type) VALUES (?, ?)")
         .bind(&payload.summary)
+        .bind(&payload.info_type)
         .execute(&mut *tx)
         .await
         .is_err()
@@ -292,9 +308,11 @@ async fn update_note(
             );
         }
     };
-    if sqlx::query("UPDATE notes SET summary = ?, is_completed = ? WHERE id = ?")
+    if sqlx::query("UPDATE notes SET summary = ?, is_completed = ?, info_type = ?, updated_at = ? WHERE id = ?")
         .bind(&payload.summary)
         .bind(&payload.is_completed)
+        .bind(&payload.info_type)
+        .bind(chrono::Utc::now())
         .bind(&id)
         .execute(&mut *tx)
         .await

@@ -16,13 +16,18 @@
                             </div>
                             <span class="text-gray-600 text-sm mx-2">{{ formatDate(record.created_at) }} UTC</span>
                         </div>
-                        <span v-if="!is_completed"
-                            class="py-0.5 px-2 rounded-full bg-yellow-400/20 border border-yellow-500 text-yellow-700 font-semibold text-[10px]">Pending</span>
-                        <span v-else
-                            class="py-0.5 px-2 rounded-full bg-green-400/20 border border-green-500 text-green-700 font-semibold text-[10px]">Completed</span>
+                        <div class="flex items-center" v-if="record.info_type == 'task'">
+                            <span v-if="!is_completed"
+                                class="py-0.5 px-2 rounded-full bg-yellow-400/20 border border-yellow-500 text-yellow-700 font-semibold text-[10px]">Pending</span>
+                            <span v-else
+                                class="py-0.5 px-2 rounded-full bg-green-400/20 border border-green-500 text-green-700 font-semibold text-[10px]">Completed</span>
+                        </div>
                     </div>
                 </div>
                 <p class="text-gray-600 mt-1 text-sm">{{ summary }}</p>
+                <div class="flex items-center justify-end text-[10px] pt-2 mt-2 border-t border-gray-200 text-gray-600">
+                    <span class="ml-1">{{ formatDate(record.updated_at) }} UTC</span>
+                </div>
                 <div v-if="dropdown"
                     class="fixed z-50 inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                     <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-sm">
@@ -47,7 +52,8 @@
             <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-lg">
                 <h2 class="text-lg font-semibold text-gray-900 mb-4">Update task</h2>
 
-                <div v-if="success_message" class="border border-green-600 bg-white text-green-600 rounded-lg mb-4">
+                <div v-if="success_message"
+                    class="border border-green-600 bg-green-600/30 text-green-600 rounded-lg mb-4">
                     <div class="p-4 text-center relative">
                         <button class="absolute top-1 right-1" @click="success_message = ''">
                             <img src="https://api.iconify.design/basil:cross-solid.svg?color=%23e01b24" width="25px">
@@ -60,7 +66,13 @@
                     class="border border-gray-200 bg-gray-100 p-3 w-full rounded-lg mb-3"
                     placeholder="Write task summary here..."></textarea>
 
-                <select v-model.number="is_completed"
+                <select v-model="info_type" class="border border-gray-200 bg-gray-100 p-3 w-full rounded-lg mb-3">
+                    <option value="">Please select the task type!</option>
+                    <option value="task">Task</option>
+                    <option value="simple">Simple</option>
+                </select>
+
+                <select v-model.number="is_completed" v-if="info_type == 'task'"
                     class="border border-gray-200 bg-gray-100 p-3 w-full rounded-lg mb-3">
                     <option :value="null">Please select the status!</option>
                     <option :value="1">Task completed</option>
@@ -72,7 +84,7 @@
                         class="flex-1 px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors">
                         {{ processing ? 'Updating...' : 'Update' }}
                     </button>
-                    <button @click="update_dropdown = false"
+                    <button @click="update_dropdown = false, dropdown_box = false"
                         class="flex-1 px-4 py-2 bg-gray-100 text-gray-900 font-medium rounded-lg hover:bg-gray-200 transition-colors">
                         Close
                     </button>
@@ -111,6 +123,7 @@ const success_message = ref("");
 
 const summary = ref("");
 const new_summary = ref("");
+const info_type = ref("");
 const is_completed = ref(null);
 
 const props = defineProps({
@@ -125,6 +138,7 @@ watchEffect(() => {
     if (props.record) {
         new_summary.value = props.record.summary;
         summary.value = props.record.summary;
+        info_type.value = props.record.info_type;
         is_completed.value = props.record.is_completed ? 1 : 0;
     }
 });
@@ -151,6 +165,9 @@ async function delete_task() {
 
 async function update_task() {
     try {
+        if (new_summary.value.trim() == '' || info_type.value == '') {
+            return;
+        }
         processing.value = true;
         success_message.value = "";
         const data = await $fetch("/api/notes/update/" + props.record.id, {
@@ -160,12 +177,17 @@ async function update_task() {
             },
             body: {
                 summary: new_summary.value,
+                info_type: info_type.value,
                 is_completed: is_completed.value == '1' ? true : false
             }
         });
         if (data.status == 200) {
             success_message.value = data.message;
             summary.value = new_summary.value;
+            dropdown_box.value = false;
+            setTimeout(() => {
+                success_message.value = "";
+            }, 3000);
         }
     } catch (e) {
         console.log(e);
