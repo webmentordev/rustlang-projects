@@ -1,0 +1,9 @@
+services:
+  profile_db:
+    image: my-rust-server
+    ports:
+      - "8787:8787"
+    environment:
+      - PROFILE_TOKEN=a8b0b450-e06d-4901-ac47-39ed00e1d5c9-01 # Just an example, change it to something strong.
+    volumes:
+      - ./profile_db:/app

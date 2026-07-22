@@ -6,3 +6,4 @@ database.sqlite
 *.jpeg
 *.jpg
 /assets/*
+/profile_db

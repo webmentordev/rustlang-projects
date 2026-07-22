@@ -1,0 +1,11 @@
+FROM debian:bookworm-slim
+
+WORKDIR /app
+
+COPY ./profile.example.json /app_defaults/profile.json
+
+COPY ./target/release/ahmerdev /usr/local/bin/ahmerdev
+
+EXPOSE 8787
+
+CMD [ "ahmerdev" ]

@@ -76,6 +76,10 @@ where
 #[tokio::main]
 async fn main() {
     dotenvy::dotenv().ok();
+
+    let sql_query = include_str!("../profile.example.json");
+    ensure_profile_exists(&sql_query).await;
+
     let database_name = String::from("database.sqlite");
     let content = fs::read_to_string("./profile.json").await.unwrap();
     let json_content = serde_json::from_str::<serde_json::Value>(&content).unwrap();
@@ -386,4 +390,22 @@ async fn delete_note(
             "status": 200
         })),
     )
+}
+
+async fn ensure_profile_exists(content: &str) {
+    let profile_path = std::path::Path::new("./profile.json");
+    let fallback_path = std::path::Path::new("/app_defaults/profile.json"); // Support for Docker local volume
+
+    if !profile_path.exists() {
+        if fallback_path.exists() {
+            if let Err(e) = tokio::fs::copy(fallback_path, profile_path).await {
+                eprintln!("⚠️ Failed to copy fallback profile.json: {e}");
+            } else {
+                println!("✅ Initialized profile.json inside mounted volume from defaults.");
+            }
+        } else {
+            let _ = tokio::fs::write(profile_path, content).await;
+            println!("✅ Created fresh profile.json inside volume.");
+        }
+    }
 }
