@@ -1,0 +1,27 @@
+Working:
+We build an array for number of pages server-side and send it, adjusted according to the current page, on each API call. 
+It's displayed on the frontend so users can click to navigate to different pages and see updated pagination/records. 
+The "..." represents hidden pages which will become visible when we move forward or backward. 
+We always keep pages 1 & 2 in the UI or array so users can easily navigate to earlier pages.
+
+Examples & Concept:
+
+#01 - Example:
+If we have 20 pages and the current page is 8, we keep 2 values (buffer values) before and after the current page (pages 6, 7 & 9, 10). 
+Without a buffer, users would not be able to navigate back to previous pages or move forward.
+["1", "2", "...", "6", "7", "8", "9", "10", "...", "20"]
+
+======================================================
+#02 - Example:
+Total pages = 20, Current page = 14
+["1", "2", "...", "12", "13", "14", "15", "16", "...", "20"]
+
+======================================================
+#03 - Example:
+Total pages = 20, Current page = 18
+["1", "2", "...", "16", "17", "18", "19", "20"]
+
+======================================================
+#04 - Example:
+Total pages = 8, Current page = 4
+["1", "2", "3", "4", "5", "6", "...", "8"]
