@@ -1,4 +1,3 @@
-use axum::extract::Path;
 use chrono::NaiveDateTime;
 use rust_embed::RustEmbed;
 use serde::{Deserialize, Serialize};
@@ -13,7 +12,7 @@ use tower_http::services::ServeDir;
 
 use axum::{
     Json, Router,
-    extract::{FromRequestParts, State},
+    extract::{FromRequestParts, Path, Query, State},
     http::{StatusCode, Uri, header},
     response::{IntoResponse, Response},
     routing::{delete, get, patch, post},
@@ -45,6 +44,11 @@ struct NoteResponse {
     info_type: String,
     created_at: NaiveDateTime,
     updated_at: NaiveDateTime,
+}
+
+#[derive(Deserialize, Debug)]
+struct Pagination {
+    page: Option<i32>, // Always passed so no need for Option!
 }
 
 struct ValidToken;
@@ -225,10 +229,30 @@ async fn update_info(State(state): State<AppState>) -> impl IntoResponse {
     )
 }
 
-async fn get_notes(State(state): State<AppState>) -> impl IntoResponse {
-    let records = match sqlx::query_as::<_, NoteResponse>("SELECT * FROM notes ORDER BY id DESC")
-        .fetch_all(&state.pool)
+async fn get_notes(
+    State(state): State<AppState>,
+    Query(query): Query<Pagination>,
+) -> impl IntoResponse {
+    let page = query.page.unwrap_or(1);
+    let total_records: i32 = sqlx::query_scalar("SELECT COUNT(*) FROM notes")
+        .fetch_one(&state.pool)
         .await
+        .unwrap_or(0);
+    let record_per_page: i64 = 10;
+    let total_pages = ((total_records as f64) / (record_per_page as f64)).ceil() as i32;
+    let off_set = (page - 1) * record_per_page as i32;
+    let pagination = create_pagination(total_pages, page).await;
+
+    let start_record = (page - 1) * record_per_page as i32 + 1;
+    let end_record = (page * record_per_page as i32).min(total_records);
+
+    let records = match sqlx::query_as::<_, NoteResponse>(
+        "SELECT * FROM notes ORDER BY id DESC LIMIT $1 OFFSET $2",
+    )
+    .bind(record_per_page)
+    .bind(off_set)
+    .fetch_all(&state.pool)
+    .await
     {
         Ok(records) => records,
         Err(_) => {
@@ -243,9 +267,41 @@ async fn get_notes(State(state): State<AppState>) -> impl IntoResponse {
     (
         StatusCode::OK,
         Json(json!({
-            "data": records
+            "data": records,
+            "current_range": format!("Showing {} to {} of {} tasks", start_record, end_record, total_records),
+            "pagination": pagination
         })),
     )
+}
+
+async fn create_pagination(pages: i32, current: i32) -> Vec<String> {
+    let mut result: Vec<String> = Vec::new();
+    let window = 6;
+    if pages < window {
+        let result: Vec<String> = (1..=pages).map(|p| p.to_string()).collect();
+        return result;
+    }
+    let buffer = 2;
+    let start_window = (current - buffer).max(1);
+    let end_window = (current + buffer).min(pages);
+    result.push("1".to_string());
+    result.push("2".to_string());
+    if start_window > 3 {
+        result.push("...".to_string());
+    }
+
+    for page in start_window.max(3)..=end_window {
+        result.push(page.to_string());
+    }
+
+    if end_window < pages - 1 {
+        result.push("...".to_string());
+    }
+
+    if end_window < pages {
+        result.push(pages.to_string());
+    }
+    result
 }
 
 async fn create_note(

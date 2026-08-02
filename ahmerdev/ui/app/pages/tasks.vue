@@ -63,6 +63,16 @@
         <div v-else>
             <p class="text-gray-600">No task exists at the moment.</p>
         </div>
+        <div v-if="pagination.length > 1"
+            class="w-full flex items-center justify-between bg-gray-100 rounded-lg p-3 mt-3">
+            <span class="text-sm">{{ current_range }}</span>
+            <div class="flex items-center">
+                <button @click="setNewPage(page)" class="py-1 px-2 ml-1 border border-gray-300 rounded-md"
+                    :class="{ 'bg-gray-300': current_page == page }" v-for="page in pagination" :key="page">{{
+                        page
+                    }}</button>
+            </div>
+        </div>
     </section>
 </template>
 <script setup lang="js">
@@ -74,6 +84,11 @@ const summary = ref(null);
 const info_type = ref("");
 const processing = ref(false);
 const success_message = ref("");
+const route = useRoute();
+const router = useRouter()
+const current_page = ref(route.query.page ?? 1);
+const pagination = ref([]);
+const current_range = ref("");
 
 const saved = localStorage.getItem('avatar');
 const auth_token = localStorage.getItem('auth_token');
@@ -84,10 +99,24 @@ await fetchNotes();
 
 async function fetchNotes() {
     try {
-        const data = await $fetch("/api/notes/get");
+        const data = await $fetch("/api/notes/get?page=" + current_page.value);
         records.value = data.data;
+        pagination.value = data.pagination;
+        current_range.value = data.current_range;
     } catch (e) {
         console.log(e);
+    }
+}
+
+async function setNewPage(page) {
+    if (page != '...') {
+        current_page.value = page;
+        router.push({
+            query: {
+                page: page
+            }
+        });
+        await fetchNotes();
     }
 }
 
