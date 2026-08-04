@@ -1,0 +1,94 @@
+ARM Cortex-M - preference
+C, C++, or Ada
+    * Cross Compilation
+    * Memory Mapped Peripherals
+    * Interrupts
+    * Common interfaces such as I2C, SPI, Serial, etc.
+STM32F3DISCOVERY development board from STMicroelectronics
+    STM32F3DISCOVERY (the “F3”)
+        STM32F303VCT6
+            * A single-core ARM Cortex-M4F processor with hardware support for single-precision floating point operations and a maximum clock frequency of 72 MHz
+            * 256 KiB of “Flash” memory. (1 KiB = 1024 bytes)
+            * 48 KiB of RAM
+            * A variety of integrated peripherals such as timers, I2C, SPI and USART.
+            * General purpose Input Output (GPIO) and other types of pins accessible through the two rows of headers along side the board.
+        LSM303DLHC chip, L3GD20 chip
+    STM32F103 microcontroller
+8-Bit MCUs (like the ST72325xx) with just a few KB of RAM and ROM,
+Raspberry Pi (Model B 3+) with 32/64-bit 4-core Cortex-A53 @ 1.4 GHz and 1GB of RAM
+Hosted Environments, Bare Metal Environments, The libstd Runtime
+The Portable Operating System Interface (POSIX)
+sysroot and restrictions on RAM/ROM-usage, and perhaps some special HW or I/Os
+To prevent rust from loading the standard library use no_std
+standard library are available through libcore
+libcore without memory allocator for dynamic memory allocation (use crates)
+libstd in embedded Environments
+libstd comes with runtime used for stack overflow protection, spawning the main, run commands
+#![no_std], no_std and libcore code
+core-crate instead of std-crate
+SIMD instructions
+no_std and libcore code for bootstrapping like bootloaders, firmware or kernels
+HashMap and HashSet are not available due to a lack of a secure random number generator
+Tooling:
+    * Rust 1.31, 1.31-beta, or a newer toolchain PLUS ARM Cortex-M compilation support.
+    * cargo-binutils ~0.1.4
+    * qemu-system-arm. Tested versions: 3.0.0
+    * OpenOCD >=0.8. Tested versions: v0.9.0 and v0.10.0
+    * GDB with ARM support. Version 7.12 or newer highly recommended. Tested versions: 7.10, 7.11, 7.12 and 8.1
+    * cargo-generate or git
+files (like linker scripts) and settings (like linker flags)
+LLVM versions of objdump, nm and size and are used for inspecting binaries.
+
+Debugging tools:
+    * Probe-rs and OpenOCD
+    * GDB and the Probe-rs Visual Studio Code extension
+    * Rusty-probe, ST-Link, J-Link, and MCU-Link
+    * Probe-rs VSCode extension
+    * Actual tools:
+        - OpenOCD (Open On-Chip Debugger)
+        - Probe-rs
+        - TRACE32
+        - GDB (GNU Debugger)
+        - Probes (JTAG or SWD)
+            - Hardware probes
+            - Rusty-probe
+            - J-Link
+            - ST-Link
+            - MCU-Link
+                - MCUXpresso IDE
+JTAG and SWD (Serial Wire Debug)
+Debuggers know how to:
+    * Interact with the memory mapped registers.
+    * Set Breakpoints/Watchpoints.
+    * Read and write to the memory mapped registers.
+    * Detect when the MCU has been halted for a debug event.
+    * Continue MCU execution after a debug event has been encountered.
+    * Erase and write to the microcontroller’s FLASH.
+ELF/DWARF debug information in TRACE32
+$ lsusb (to check usb linked devices)
+
+===================
+Getting Started
+===================
+writing, building, flashing and debugging embedded programs
+$ cargo install cargo-generate
+#![no_std]
+#![no_main]
+
+
+
+======================================================================
+* flash memory
+* single-precision floating point
+* maximum clock frequency of 72 MHz
+* Caution: The microcontroller STM32F303VCT6 pins take a nominal voltage of 3.3 volts
+* #![no_std]
+* libcore & libstd
+* alloc crate and use a suitable allocator like alloc-cortex-m
+* collections crate for no_std
+* cargo-generate: a Cargo subcommand for creating new Cargo projects from templates
+* cargo-binutils
+* LLVM tools
+* JTAG or SWD (Serial Wire Debug) interfaces
+* breakpoints and watchpoints
+======================================================================
