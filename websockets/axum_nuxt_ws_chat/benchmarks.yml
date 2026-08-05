@@ -1,0 +1,12 @@
+config:
+  target: "ws://127.0.0.1:3099"
+
+  phases:
+    - duration: 10
+      arrivalCount: 10000
+
+scenarios:
+  - engine: ws
+    flow:
+      - connect: "ws://127.0.0.1:3099/ws/test"
+      - think: 30
