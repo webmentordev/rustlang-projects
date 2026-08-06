@@ -15,6 +15,8 @@ use tokio::sync::broadcast;
 #[derive(Deserialize, Serialize)]
 struct Room {
     message: String,
+    user_id: String,
+    name: String,
 }
 
 #[derive(Clone)]
@@ -41,7 +43,6 @@ async fn handle_ws(
     Path(room): Path<String>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    // println!("Connection Received ROOM: {}", room);
     ws.on_upgrade(move |socket| handle_socket(socket, room, state))
 }
 
@@ -63,18 +64,14 @@ async fn handle_socket(mut socket: WebSocket, room: String, state: AppState) {
             incoming = socket.recv() => {
                 match incoming {
                     Some(Ok(Message::Text(text))) => {
-                        println!("Received: {}", text);
-                        let request: Room = match serde_json::from_str(text.as_str()) {
-                            Ok(r) => r,
-                            // Err(e) => { eprintln!("bad message: {e}"); continue; }
-                            Err(_) => { continue; }
-                        };
-                        // TODO: Auth user's name
-                        let reply = format!("Your message received: {}", request.message);
-                        let _ = tx.send(reply);
+                        if serde_json::from_str::<Room>(&text).is_err() {
+                            eprintln!("Invalid message format!");
+                            continue;
+                        }
+                        let _ = tx.send(text.to_string());
                     }
                     Some(Ok(Message::Close(_))) | None => {
-                        // println!("Client disconnected");
+                        println!("Client disconnected");
                         break;
                     }
                     Some(Err(_)) => break,
