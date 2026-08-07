@@ -53,12 +53,19 @@ async fn handle_socket(mut socket: WebSocket, room: String, state: AppState) {
         .or_insert_with(|| broadcast::channel(100).0)
         .clone();
     let mut rx = tx.subscribe();
-
     loop {
         tokio::select! {
-            Ok(msg) = rx.recv() => {
-                if socket.send(Message::Text(msg.into())).await.is_err() {
-                    break;
+            result = rx.recv() => {
+                match result {
+                    Ok(msg) => {
+                        if socket.send(Message::Text(msg.into())).await.is_err() {
+                            break;
+                        }
+                    }
+                    Err(broadcast::error::RecvError::Lagged(n)) => {
+                        eprintln!("Client lagged, missed {n} messages");
+                    }
+                    Err(broadcast::error::RecvError::Closed) => break,
                 }
             }
             incoming = socket.recv() => {
@@ -79,5 +86,9 @@ async fn handle_socket(mut socket: WebSocket, room: String, state: AppState) {
                 }
             }
         }
+    }
+    drop(rx);
+    if tx.receiver_count() == 0 {
+        state.rooms.remove(&room);
     }
 }
