@@ -1,0 +1,354 @@
+Options, Results, Errors and Iterators.
+won’t be doing converting between pointers and integers
+collections return their size as a usize (.len())
+x.try_into(), into()
+explicit conversion
+unit type ()
+Unicode value (four bytes)
+UTF-8 bytes & sequence of arbitrary bytes
+char::from_u32, char::from_u32_unchecked
+Arrays, Tuples, Structs
+heterogeneous types (tuples)
+std::ffi::OsString - Page 4 Footer (IMPORTANTTTTTTTTTTTTTTTTTT)
+enum
+newtype pattern
+default arm _ => {} in enum
+algebraic data type (ADT)
+non_exhaustive enum
+Ubiquitous enum Types: Result<T,E> & Option<T>
+? operator
+Functions, Methods, Function Pointers, Closures, Traits - Page 10
+self in impl DataStructure block of trait
+&self, &mut self, self as method parameters - Page 11
+function pointer - Page 12
+implements std::fmt::Pointer
+Closures
+function definition (a lambda expression)
+move keyword
+Fn* traits, FnOnce, FnMut, Fn - Page 15-16
+trait bound
+unboxed_closures and fn_traits
+prefer Fn* trait bounds over bare function pointers
+Traits
+Trait default implementation
+"prefer accepting trait types over concrete types"
+marker trait with trait bound
+trait bound, trait object - Page 18
+any type T
+dynamic dispatch
+Rust has “vtable” objects
+&dyn Trait or Box<dyn Trait>
+Only object-safe traits can be used as trait objects.
+Result also has a #[must_use] attribute
+Rust’s question mark operator, ?.
+generic functions marked as #[inline]
+.map_err() - Page 23
+implementation of the From standard trait
+as_ref(), AsRef trait
+std::error::Error trait
+Display trait, Debug trait
+method in the trait is source()
+If nested error information / inner error on Error trait
+orphan rule of trait
+A type alias
+tuple struct with newtype pattern
+From<String> trait - Page 28
+thiserror crate from David Tolnay
+David Tolnay’s anyhow crate
+stack traces
+dynamic error type (such as anyhow::Error)
+heterogeneous underlying error types
+User-defined type conversions, Semi-automatic conversions, Implicit coercion
+From and Into traits
+From<T>, TryFrom<T>, Into<T>, TryInto<T>
+implement the From trait for conversions
+From and Into advice - Page 35
+use the Into trait for trait bounds
+trait coherence rules
+associated error type: Infallible
+reflexive trait implementation of From<T> - Page 37-38
+reference types and their related conversion traits
+as keyword for cast
+into()
+implicit coercions - Page 39
+dereference a raw pointer
+Deref or the DerefMut trait
+fat pointer
+newtype pattern - Page 40
+#[repr(transparent)] attribute
+Orphan Rule for Traits - Page 43
+foreign trait for a foreign type
+Newtype Limitations - Page 44
+builder pattern for complex/struct types (live below this line)
+implementing and using the Default trait
+chrono::Utc & Other things
+.to_owned()
+derive_builder crate
+reference and pointer types - Page 51
+Rust raw pointer
+References are eight bytes in size on a 64-bit platform
+Box<T> pointer type for Heap allocation
+Pointer Traits - Page 54
+Deref trait, deref() for Box
+DerefMut trait, Deref coercion
+AsRef and AsMut traits
+as_ref() and as_mut()
+AsRef<Point> (Point is the value like a struct)
+AsRef<[u8]>, AsRef<OsStr>, AsRef<Path>, AsRef<str> - Page 55
+filesystem path
+fat pointer types: slices and trait objects
+array & slices in rust
+Vec<T> with push() & pop()
+Vec<T> are kept on the heap - Page 57
+slice of Vec<T>
+Vec::<u64>::with_capacity()
+1..3 part is a range expression
+Range<usize> type
+SliceIndex<T> trait on range type, SliceIndex<[u64]>
+Index trait’s index method on vector, *vector.index( )
+IndexMut
+Vec<T>’s implementation of Index<I>
+Trait objects fat pointer - Page 58
+The vtable
+function pointers with dynamic dispatch
+drop() function pointer
+The dyn keyword for dynamic dispatch
+-------
+Page 59
+-------
+Deref / DerefMut, AsRef / AsMut
+Pointer trait
+Brorrow/BorrowMut
+borrow and borrow_mut
+ToOwned / to_owned()
+------
+Clone specifically requires a Rust reference &T, ToOwned instead copes
+with things that implement Borrow
+------
+Cow type
+Rc<T> - reference counted pointer
+Cyclical data structures
+Weak<T>
+get_mut
+RefCell<T>
+try_borrow[_mut] & borrow[_mut]
+Ref<T> / RefMut<T>
+Cell<T> / get(&self) / set(&self, val)
+Arc<T>
+Mutex / lock() / MutexGuard / Deref[Mut]
+RwLock
+Rc<RefCell<Vec<T>>> / Rc<Vec<RefCell<T>>>
+Iterators (Page 64)
+iterator transform or iterator
+------
+Page 65 for Interator example
+------
+Rust’s iterator traits
+Iterator next, IntoIterator, into_iter
+------
+let mut iter = collection.into_iter();
+while let Some(item) = iter.next()
+------
+iter(), iter_mut()
+take(n), skip(), step_by(n), chain(other), cycle(), rev(), map(|item|{...}), cloned(),
+copied(), enumerate(), zip(it) filter(|item|{...}), take_while(), skip_while()
+flatten()
+foreach(|item| {...}) - Alternative for Foor Loop
+Collect() & fromIterator Trait
+.collect::<Result<Vec<_>, _>>()? - Page 74
+============
+Chapter 2
+============
+Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display
+f32::NAN / f64::NAN
+![warn(missing_debug_implementations)]
+Traits: fn, FnOnce, FnMut, Error, Drop, From TryFrom, Deref, DerefMut, Iterator, Send, Sync
+std::ops module
+Operator overload traits
+per-process file descriptor limit (Unix)
+Learn everything about FFI (foreign Function Interface)
+MutexGuard / Mutex::Lock()
+Trait bounds and Trait Objects for generics - Page 94 - 96
+monomorphization
+is_empty() method for an ExactSizeIterator
+segments in memory - Page 106
+Stack pointer
+non-lexical lifetimes - page 112
+'static lifetime - page 116
+lifetime elision rules
+Box::leak
+lifetimes of items on the stack
+Lifetimes and the Heap
+Lifetimes in Data Structures - Page 119
+Rc Smart pointers for Lifetimes
+anonymous lifetime '_
+fmt method of the Debug trait
+std::mem::replace
+replace method on Option()
+non-lexical life‐times
+Rc::new(RefCell::new(Item { contents: 42 })) - Page 132 examples
+using indices as pseudo-pointers - page 136
+Rc, RefCell, Arc, Mutex, RwLock, Cell
+shared pointers, std::shared_ptrs, Rc<RefCell<T>>
+borrow_mut()
+Weak<T>, Rc::downgrade - page 139
+unsafe code or un-smart pointers
+std::borrow::Cow
+self-referential data structures - page 140
+std::ops::Range<usize>
+async Pin type
+std::pin::Pin
+std::borrow::Cow
+(take, swap, replace) in std::mem
+crates: once_cell, rand, byteorder, cxx - page 143
+foreign function interface (FFI)
+Clippy
+unsafe_op_in_unsafe_fn lint
+Miri over your unsafe code - page 144
+thread-hostile - page 148 footer
+Mutex poisoned - page 151
+lock() in MutexGuard
+cross-thread synchronization
+std::sync::Arc
+Send, Sync (Marker traits with no methods)
+impl !Sync
+Multi and Non multi thread safe types without Sync & Send
+std::sync::mpsc module: the channel() function
+no_deadlocks, ThreadSanitizer, or parking_lot::deadlock CI systems
+std::panic::catch_unwind
+String::from_utf8_unchecked, String::from_utf8
+unwrap(), unwrap_err() / expect(), expect_err() / unreachable!()
+no_panic crate
+std::any for reflection, std::any::type_name<T>, std::any::TypeId
+std::any::Any trait with type_id()
+is::<T>(), downcast_ref::<T>(), downcast_mut::<T>()
+fat pointer
+derive macros
+“trait upcasting” feature / #![feature(trait_upcasting)]
+raw identifier prefix r# (giving a field r#type: u8)
+.to_vec() or .clone(), Box::new()
+Rc<T> / RefCell<T>, Arc<T> / Mutex<T> - page 174
+Smart Pointer or interconnected reference lifetimes
+--------------
+Chapter 4
+--------------
+Cargo package versions usages - Page 176
+wildcard import from the crate
+new trait method vs new inherent method
+enum as non_exhaustive
+struct as non_exhaustive
+cargo-semver-checks tool
+Tools such as cargo update or Dependabot
+alternate registry of crates - Page 191 Footer
+cargo-udeps tool
+cargo-deny tool
+cargo tree command - Page 194-195
+build.rs
+Cargo’s feature
+cfg (and cfg_attr) attributes
+panic = "abort"
+target_os, target_arch,  target_pointer_width, target_endian, target_has_atomic
+[cfg(target_has_atomic = "32")] and [cfg(target_has_atomic = "64")] - Page 197
+--no-default-features
+#[cfg(feature = "rand")]
+a mechanism that allows imported crates to be renamed (the package key)
+Cargo feature unification
+independent features
+--------------
+Chapter 5
+--------------
+cargo doc,  cargo doc --open, cargo doc --no-deps --open
+#![deny(broken_intra_doc_links)]
+#![warn(missing_docs)]
+intra_doc_link_resolution_failure.
+readme field in Cargo.toml
+write a macro instead of a function
+metaprogramming
+abstract syntax tree (AST) of the program
+Rust’s declarative macros are hygienic
+Declarative macros, Procedural macros - Page 209
+#[macro_export]
+cargo-expand tool
+::std::io::_print(format_args!("x is {0:?}\n", x));
+format_args!
+procedural macro AKA proc macros
+proc-macro crate
+Procedural macro: Function-like macros, Attribute macros, Derive macros - Page 215
+file!() and line!() macros
+square_once! macro
+Clippy, cargo clippy - Page 223
+lint checks
+#[allow(clippy::some_lint)], #![allow(clippy::some_lint)]
+Unit tests, Integration Tests, Fuzz Testing #[test], #[cfg(test)]
+assert_eq!
+#[should_panic] attribute
+cargo bench, cargo +nightly bench
+std::hint::black_box
+Godbolt compiler explorer
+criterion crate
+test::bench::Bencher functionality
+AddressSanitizer or ThreadSanitizer of memory
+denial-of-service (DoS) attack on the codebase
+LLVM toolchain as libFuzzer
+cargo-fuzz
+the Rust Fuzz Book
+Google OSS-Fuzz program - Page 233 footer
+#[cfg(target_os = "windows")]), run tests for every platform
+cargo fmt, cargo check, cargo clippy, cargo doc, cargo bench, cargo update, cargo tree, cargo metadata
+cargo_metadata crate
+cargo-udeps, cargo-deny
+syn crate
+cargo-expand, cargo-tarpaulin
+Tools for Rust - Page 237
+bindgen for auto-generating Rust FFI
+rust-toolchain.toml
+no_std compatibility test (no_std target (e.g., thumbv6m-none-eabi))
+clippy -- -Dwarnings
+rustfmt / cargo fmt
+prost a Protocol Buffers
+#[cfg(target_arch ="arm")]
+engineer’s time is a flaky test
+GitHub Actions for CI
+-------------------
+Chapter 06
+--------------------
+#![no_std] crate-level
+core lib
+alloc
+the sysroot crates
+spin crate
+#![cfg_attr(not(feature = "std"), no_std)]
+#[cfg(feature = "alloc")]
+infallible allocation
+Vec::try_reserve, Box::try_new
+.map_err
+no_global_oom_handling config flag
+foreignfunction interface (FFI) - Page 249
+extern "C" marker and  no_mangle functions
+libcffi.a ar tool
+#[link(name = "cffi")]
+cargo:rustc-link-lib
+cargo:rustc-link-search - Page 251
+std::os::raw::c_int
+name mangling & bindgen tool
+nm tool can show what the linker works
+#[repr(C)]
+CStr with as_ptr()
+AsRef and AsMut traits
+#[repr(C)] attribute
+rustfilt, which builds on the rustc-demangle command
+Box::into_raw
+Box::from_raw
+sized integer types
+Prefer bindgen to manual FFI mappings
+C-unwind ABI
+include! macro: include!("generated.rs");
+bindgen: --allowlist-function and --allowlist-type
+cxx crate for C++/Rust interoperation
+------------------
+Afterword
+-------------------
+Async rust, Async Rust by Maxwell Flitton and Caroline Morton (O’Reilly, 2024)
+bare-metal Rust with Comprehensive Rust online course
+Websites to see crates: blessed.rs or lib.rs
+Jon Gjengset’s Rust for Rustaceans (No Starch, 2022)

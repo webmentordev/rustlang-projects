@@ -1,0 +1,1 @@
+I chose these topics from the book "Effective Rust" by David Drysdale. These topics are Rust-specific, so I must complete them. I know about 70% of them, but to write good Rust code, I need to master all of them.
