@@ -1,8 +1,8 @@
 Options, Results, Errors and Iterators.
 won’t be doing converting between pointers and integers
 collections return their size as a usize (.len())
-x.try_into(), into()
-explicit conversion
+[✅]x.try_into(), into()
+explicit primitive conversion or type casting
 unit type ()
 Unicode value (four bytes)
 UTF-8 bytes & sequence of arbitrary bytes
@@ -16,7 +16,6 @@ default arm _ => {} in enum
 algebraic data type (ADT)
 non_exhaustive enum
 Ubiquitous enum Types: Result<T,E> & Option<T>
-? operator
 Functions, Methods, Function Pointers, Closures, Traits - Page 10
 self in impl DataStructure block of trait
 &self, &mut self, self as method parameters - Page 11
@@ -40,7 +39,7 @@ Rust has “vtable” objects
 &dyn Trait or Box<dyn Trait>
 Only object-safe traits can be used as trait objects.
 Result also has a #[must_use] attribute
-Rust’s question mark operator, ?.
+Rust’s question mark operator, ? and working with anyhow crate (sqlx crate)
 generic functions marked as #[inline]
 .map_err() - Page 23
 implementation of the From standard trait
