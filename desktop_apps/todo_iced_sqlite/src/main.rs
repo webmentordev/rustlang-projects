@@ -3,13 +3,13 @@ use iced::{Element, Length, Task};
 use sqlx::{SqlitePool, sqlite::SqlitePoolOptions};
 use std::sync::Arc;
 
-pub fn main() -> iced::Result {
+fn main() -> iced::Result {
     iced::application(App::new, App::update, App::view)
         .title("Todo List")
         .run()
 }
 
-#[derive(Debug, Clone, sqlx::FromRow)]
+#[derive(Clone, sqlx::FromRow)]
 struct Todo {
     id: i64,
     text: String,
@@ -22,7 +22,7 @@ struct App {
     input_value: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 enum Message {
     DbConnected(Arc<SqlitePool>),
     TodosLoaded(Result<Vec<Todo>, String>),
