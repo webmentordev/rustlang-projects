@@ -1,3 +1,4 @@
+use dirs;
 use iced::widget::{button, checkbox, column, container, row, scrollable, text, text_input};
 use iced::{Element, Length, Task};
 use sqlx::{SqlitePool, sqlite::SqlitePoolOptions};
@@ -153,11 +154,17 @@ impl App {
 }
 
 async fn setup_db() -> Arc<SqlitePool> {
+    let db_path = dirs::home_dir()
+        .expect("Failed to get home directory")
+        .join("todos_database.db");
+
+    let db_url = format!("sqlite://{}?mode=rwc", db_path.to_string_lossy());
+
     let pool = SqlitePoolOptions::new()
-        .max_connections(2)
-        .connect("sqlite://database.db?mode=rwc")
+        .max_connections(5)
+        .connect(&db_url)
         .await
-        .expect("Failed to connect to SQLite");
+        .expect("Failed to connect to sqlite");
 
     sqlx::query(
         "CREATE TABLE IF NOT EXISTS todos (

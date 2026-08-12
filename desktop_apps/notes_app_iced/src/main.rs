@@ -1,3 +1,4 @@
+use dirs;
 use iced::{
     Element, Length, Task,
     widget::{button, column, container, row, scrollable, text, text_input},
@@ -5,7 +6,7 @@ use iced::{
 use sqlx::{SqlitePool, sqlite::SqlitePoolOptions};
 use std::sync::Arc;
 
-#[derive(Clone, sqlx::FromRow)]
+#[derive(Debug, Clone, sqlx::FromRow)]
 struct Note {
     id: i64,
     text: String,
@@ -18,7 +19,7 @@ struct App {
     input_value: String,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 enum ActionMessages {
     DbConnect(Arc<SqlitePool>),
     LoadNotes(Result<Vec<Note>, String>),
@@ -141,11 +142,18 @@ fn main() -> iced::Result {
 }
 
 async fn connect_to_db() -> Arc<SqlitePool> {
+    let db_path = dirs::home_dir()
+        .expect("Failed to get home directory")
+        .join("notes.db");
+
+    let db_url = format!("sqlite://{}?mode=rwc", db_path.to_string_lossy());
+
     let pool = SqlitePoolOptions::new()
         .max_connections(5)
-        .connect("sqlite://notes.db?mode=rwc")
+        .connect(&db_url)
         .await
         .expect("Failed to connect to sqlite");
+
     sqlx::query(
         "
         CREATE TABLE IF NOT EXISTS notes(
