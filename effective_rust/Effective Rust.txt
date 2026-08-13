@@ -1,7 +1,8 @@
 Options, Results, Errors and Iterators.
 won’t be doing converting between pointers and integers
 collections return their size as a usize (.len())
-[✅]x.try_into(), into()
+[✅]x.try_into(), into() - {into.rs}
+[✅]Into<T>, TryInto<T> - {into_traits.rs}
 explicit primitive conversion or type casting
 unit type ()
 Unicode value (four bytes)
@@ -59,7 +60,7 @@ dynamic error type (such as anyhow::Error)
 heterogeneous underlying error types
 User-defined type conversions, Semi-automatic conversions, Implicit coercion
 From and Into traits
-From<T>, TryFrom<T>, Into<T>, TryInto<T>
+From<T>, TryFrom<T>
 implement the From trait for conversions
 From and Into advice - Page 35
 use the Into trait for trait bounds
