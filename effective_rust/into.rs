@@ -1,5 +1,6 @@
-fn main(){
+fn main() {
     // There are two methods: into() and try_into()
+    // Use From Trait instead of Into because From will automatically provide implementation of Into
 
     // into()
     // into() is used for generic type conversion.
@@ -17,30 +18,27 @@ fn main(){
     let _num: f64 = 6.8f32.into();
     // let _num: i32 = 100i64.into(); // Does not compile with into()
 
-
-
     // try_into()
     // Same as into() but conversion can fail so it returns Result enum
     // Result has Ok() value to be the type to convert into
     let num: Result<i32, _> = 100i64.try_into();
     match num {
         Ok(_) => println!("Value Converted!"),
-        Err(_) => println!("Try Into conversion failed!")
+        Err(_) => println!("Try Into conversion failed!"),
     }
 
     // Explicit type hint annotation using as, works
     // This is not explicit conversion
-    match 100i64.try_into() as Result<i32, _>{
+    match 100i64.try_into() as Result<i32, _> {
         Ok(num) => println!("Converted: {}", num),
-        Err(_) => println!("Try into conversion failed!")
+        Err(_) => println!("Try into conversion failed!"),
     }
 
-    match TryInto::<i32>::try_into(100i64){
+    match TryInto::<i32>::try_into(100i64) {
         Ok(num) => println!("Converted: {}", num),
-        Err(_) => println!("Try into conversion failed!")
+        Err(_) => println!("Try into conversion failed!"),
     }
 
-    
     // Turbofish syntax, not work becasue it can not infer the type to convert to
     // match 100i64.try_into::<i32>() {
     //     Ok(num) => println!("Converted: {}", num),

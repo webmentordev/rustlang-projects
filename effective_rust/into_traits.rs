@@ -1,4 +1,6 @@
-// IMPORTANT: This code will note compile with both Impls applied at once
+// IMPORTANT: This code will not compile with both trait implementation applied at once
+// Use TryFrom trait for flexibility and it provides an equivalent TryInto implementation
+// The struct implementation here is juust an example, you can use Display Trait for this
 
 // Into has two traits, TryInto & Into
 // Use which suits the need.
