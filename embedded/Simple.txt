@@ -1,0 +1,75 @@
+If a line start with $ that means it's a CLI command.
+
+=========================
+ESP 32
+--------
+Why ESP32?
+* We will use C6 Dev board
+* Because they have official crates to work with
+* ESP has different family of products
+* ESP has two 32 bit architect processors: Xtensa & RISC-V
+Xtensa: ESP32, S2, S3
+RISC-V: C2, C3, C6, H2
+
+- Rust uses LLVM compiler which can be used to compile binary for almost all sorts of processors.
+- Rust toolchain must have a target that you will compile for like ESP32 or CortexARM
+(https://doc.rust-lang.org/beta/rustc/platform-support.html)
+
+-------------
+- Example targets for RISC-V, not Xtensa:
+* riscv32imc-unknown-none-elf
+* riscv32imac-unknown-none-elf
+You can add them using this command:
+$ rustup target add name-goes-here
+    e.g rustup target add riscv32imac-unknown-none-elf
+
+- Example targets for Xtensa:
+ESP32 has a tool for this that you can use to install
+$ cargo install espup --locked
+$ espup install
+You will always use this toolchain to build you Xtensa related things.
+-------------
+
+=========================
+Installations:
+* Install rust
+* Install target
+* Install gcc toolchain (to link final binary)
+* Install espflash ($ cargo install espflash --locked)
+* Install probe-rs (it is a debugger)
+* Install esp-generate ($ cargo install esp-generate --locked)
+
+Let's start:
+* Add build target in your cargo (not just the project/crate)
+$ rustup target add riscv32imac-unknown-none-elf
+* Now there are two ways to generate a project.
+    1. with simple cargo new command
+    2. with esp-generate command
+
+---------------------------
+1. with simple cargo new command
+----------------------------
+You have to perform these additonal steps
+    1. cargo new
+    2. no-std-no-main
+    3. panic-handler & logger
+    4. linker script
+    5. cargo config
+    6. embassy/async
+    7. HAL
+    8. memory.x
+    9. Release profile & IDE setup
+---------------------------
+2. with esp-generate command
+---------------------------
+Just run this command and select options:
+    1. Target ship
+    2. Project name
+    3. Check features you want, must check following (you will find them further inside)
+        - check unstable HAL feature if available
+        - use espflash instead of probe-rs
+        - defmt printing
+        - esp-backtrace
+        - VSCode settings or anyother
+    4. Connect your device using usb
+    5. cargo run --release
