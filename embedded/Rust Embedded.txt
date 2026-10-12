@@ -68,14 +68,27 @@ ELF/DWARF debug information in TRACE32
 $ lsusb (to check usb linked devices)
 
 ===================
+Installations
+===================
+$ cargo install cargo-binutils
+$ rustup component add llvm-tools
+$ cargo install cargo-generate
+(This is for arch linux. I'm on CachyOs)
+$ sudo pacman -S arm-none-eabi-gcc arm-none-eabi-binutils arm-none-eabi-newlib base-devel git
+$ rustup target add thumbv7m-none-eabi (Cortex-M3 architecture)
+
+
+===================
 Getting Started
 ===================
 writing, building, flashing and debugging embedded programs
 $ cargo install cargo-generate
 #![no_std]
 #![no_main]
-
-
+panic_handler
+#[entry]
+Find memory layout for the target microcontroller, memory.x
+qemu-system-arm to run the built project binary
 
 ======================================================================
 * flash memory
@@ -91,4 +104,11 @@ $ cargo install cargo-generate
 * LLVM tools
 * JTAG or SWD (Serial Wire Debug) interfaces
 * breakpoints and watchpoints
+* cargo readobj --bin app -- --file-headers (inspect binary files)
+* cargo size --bin app --release -- -A (Print size of the linker section to the binary)
+* hardware FPU, will make QEMU error during its execution.
+* Semihosting
+* Remote debugging
+* GDB (or LLDB)
+* gdb-multiarch or arm-none-eabi-gdb
 ======================================================================
