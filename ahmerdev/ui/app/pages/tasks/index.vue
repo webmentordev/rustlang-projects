@@ -3,9 +3,12 @@
         <div class="flex flex-col mb-5 border-b border-gray-200 pb-3">
             <div class="flex items-center justify-between mb-4 max-main-2:flex-col">
                 <h1 class="font-black text-2xl">Daily tasks progress</h1>
-                <div class="flex items-center max-main-2:mt-2">
-                    <NuxtLink to="/" class="px-4 w-fit">
+                <div class="flex items-center max-main-2:mt-2 gap-3">
+                    <NuxtLink to="/" class="w-fit">
                         Profile
+                    </NuxtLink>
+                    <NuxtLink to="/tasks/professional" class="w-fit">
+                        Todos
                     </NuxtLink>
                     <button @click="create_task = !create_task"
                         class="flex items-center bg-black text-white py-1 px-3 rounded-lg font-semibold cursor-pointer">
@@ -48,11 +51,10 @@
                         token</button>
                 </div>
             </div>
-            <p class="text-gray-600">This task board is for my personal and office-related work and progress tracking.
-                This is where I record
-                my
-                daily
-                activities, such as what I did today and what I plan to do. If tasks are in a pending state, it means
+            <p class="text-gray-600">This task board is for my personal work and progress tracking.
+                This is where I record my development related activities, such as what I did today and what I plan to
+                do. If tasks are in a
+                pending state, it means
                 that I am either working on them or they depend on another task that is currently in progress.</p>
         </div>
         <div class="flex flex-col w-full" v-if="records.length">

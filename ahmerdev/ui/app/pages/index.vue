@@ -1,9 +1,14 @@
 <template>
     <div class="max-w-2xl w-full mx-auto mb-3 pt-3 pb-5 bg-white px-4" v-if="record">
-        <NuxtLink to="/tasks"
-            class="py-2 flex items-center justify-center px-4 rounded-lg m-auto bg-black text-white font-semibold mb-4 w-fit">
-            Daily tasks
-        </NuxtLink>
+        <div class="flex items-center justify-center gap-3 m-auto w-fit">
+            <NuxtLink to="/tasks" class="py-2 px-4 rounded-lg m-auto bg-black text-white font-semibold mb-4 w-fit">
+                Tasks
+            </NuxtLink>
+            <NuxtLink to="/tasks/professional"
+                class="py-2 px-4 rounded-lg m-auto bg-black text-white font-semibold mb-4 w-fit">
+                Todos
+            </NuxtLink>
+        </div>
         <img :src="record.avatar_url" alt="Profile pic" class="rounded-full m-auto mb-2 w-25 h-25 object-cover">
         <div class="text-center pb-0 mb-3">
             <h1 class="text-xl font-bold tracking-wide uppercase mb-1">{{ record.name }}</h1>

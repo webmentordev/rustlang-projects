@@ -46,6 +46,24 @@ struct NoteResponse {
     updated_at: NaiveDateTime,
 }
 
+#[derive(Deserialize, Serialize)]
+struct ProfessionalTodoRequest {
+    todo: String,
+    is_completed: Option<bool>,
+    status: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, sqlx::FromRow)]
+struct ProfessionalTodoResponse {
+    id: i32,
+    todo: String,
+    is_completed: bool,
+    completed_at: Option<String>,
+    status: String,
+    created_at: NaiveDateTime,
+    updated_at: NaiveDateTime,
+}
+
 #[derive(Deserialize, Debug)]
 struct Pagination {
     page: Option<i32>, // Always passed so no need for Option!
@@ -141,6 +159,22 @@ async fn main() {
             .await
             .unwrap();
     }
+    sqlx::query(
+        "
+        CREATE TABLE IF NOT EXISTS professional_todos(
+            id INTEGER PRIMARY KEY,
+            todo TEXT NOT NULL,
+            is_completed INTEGER NOT NULL DEFAULT 0,
+            completed_at DATETIME,
+            status TEXT NOT NULL DEFAULT 'pending'
+                CHECK (status IN ('pending', 'in_progress', 'completed')),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )",
+    )
+    .execute(&mut *tx)
+    .await
+    .unwrap();
     tx.commit().await.unwrap();
 
     let appstate = AppState {
@@ -157,9 +191,16 @@ async fn main() {
         .route("/create", post(create_note))
         .route("/update/{id}", patch(update_note))
         .route("/delete/{id}", delete(delete_note));
+    let professional_todos_routes = Router::new()
+        .route("/get", get(get_professional_todos))
+        .route("/get/{id}", get(get_professional_todo))
+        .route("/create", post(create_professional_todo))
+        .route("/update/{id}", patch(update_professional_todo))
+        .route("/delete/{id}", delete(delete_professional_todo));
     let api_routes = Router::new()
         .nest("/info", info_routes)
-        .nest("/notes", notes_routes);
+        .nest("/notes", notes_routes)
+        .nest("/professional_todos", professional_todos_routes);
     let app = Router::new()
         .nest_service("/assets", ServeDir::new("assets"))
         .nest("/api", api_routes)
@@ -443,6 +484,294 @@ async fn delete_note(
         StatusCode::OK,
         Json(json!({
             "message": "Task has been deleted",
+            "status": 200
+        })),
+    )
+}
+
+fn resolve_todo_state(
+    status: Option<String>,
+    is_completed: Option<bool>,
+) -> Result<(String, bool), ()> {
+    if let Some(s) = status.as_deref() {
+        if !matches!(s, "pending" | "in_progress" | "completed") {
+            return Err(());
+        }
+    }
+    let completed = status.as_deref() == Some("completed") || is_completed == Some(true);
+    if completed {
+        Ok(("completed".to_string(), true))
+    } else {
+        Ok((status.unwrap_or_else(|| "pending".to_string()), false))
+    }
+}
+
+async fn get_professional_todos(
+    State(state): State<AppState>,
+    Query(query): Query<Pagination>,
+) -> impl IntoResponse {
+    let page = query.page.unwrap_or(1).max(1);
+    let total_records: i32 = sqlx::query_scalar("SELECT COUNT(*) FROM professional_todos")
+        .fetch_one(&state.pool)
+        .await
+        .unwrap_or(0);
+    let record_per_page: i64 = 10;
+    let total_pages = ((total_records as f64) / (record_per_page as f64)).ceil() as i32;
+    let off_set = (page - 1) * record_per_page as i32;
+    let pagination = create_pagination(total_pages, page).await;
+
+    let start_record = (page - 1) * record_per_page as i32 + 1;
+    let end_record = (page * record_per_page as i32).min(total_records);
+
+    let records = match sqlx::query_as::<_, ProfessionalTodoResponse>(
+        "SELECT id, todo, is_completed, CAST(completed_at AS TEXT) AS completed_at, status, created_at, updated_at FROM professional_todos ORDER BY id DESC LIMIT $1 OFFSET $2",
+    )
+    .bind(record_per_page)
+    .bind(off_set)
+    .fetch_all(&state.pool)
+    .await
+    {
+        Ok(records) => records,
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({
+                    "message": "Something went wrong!"
+                })),
+            );
+        }
+    };
+    (
+        StatusCode::OK,
+        Json(json!({
+            "data": records,
+            "current_range": format!("Showing {} to {} of {} todos", start_record, end_record, total_records),
+            "pagination": pagination
+        })),
+    )
+}
+
+async fn get_professional_todo(
+    State(state): State<AppState>,
+    Path(id): Path<i32>,
+) -> impl IntoResponse {
+    match sqlx::query_as::<_, ProfessionalTodoResponse>(
+        "SELECT id, todo, is_completed, CAST(completed_at AS TEXT) AS completed_at, status, created_at, updated_at FROM professional_todos WHERE id = ?",
+    )
+    .bind(id)
+    .fetch_optional(&state.pool)
+    .await
+    {
+        Ok(Some(record)) => (StatusCode::OK, Json(json!({ "data": record }))),
+        Ok(None) => (
+            StatusCode::NOT_FOUND,
+            Json(json!({
+                "message": "Todo not found"
+            })),
+        ),
+        Err(_) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({
+                "message": "Something went wrong!"
+            })),
+        ),
+    }
+}
+
+async fn create_professional_todo(
+    ValidToken: ValidToken,
+    State(state): State<AppState>,
+    Json(payload): Json<ProfessionalTodoRequest>,
+) -> impl IntoResponse {
+    let (status, completed) = match resolve_todo_state(payload.status, payload.is_completed) {
+        Ok(value) => value,
+        Err(_) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "message": "Invalid status. Use pending, in_progress or completed"
+                })),
+            );
+        }
+    };
+    let mut tx = match state.pool.begin().await {
+        Ok(tx) => tx,
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({
+                    "message": "Something went wrong!"
+                })),
+            );
+        }
+    };
+    if sqlx::query(
+        "INSERT INTO professional_todos (todo, is_completed, status, completed_at)
+         VALUES (?, ?, ?, CASE WHEN ? = 1 THEN datetime('now') ELSE NULL END)",
+    )
+    .bind(&payload.todo)
+    .bind(completed)
+    .bind(&status)
+    .bind(completed)
+    .execute(&mut *tx)
+    .await
+    .is_err()
+    {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({
+                "message": "Something went wrong!"
+            })),
+        );
+    }
+    if tx.commit().await.is_err() {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({
+                "message": "Something went wrong!"
+            })),
+        );
+    }
+    (
+        StatusCode::OK,
+        Json(json!({
+            "message": "Todo has been created",
+            "status": 200
+        })),
+    )
+}
+
+async fn update_professional_todo(
+    ValidToken: ValidToken,
+    State(state): State<AppState>,
+    Path(id): Path<i32>,
+    Json(payload): Json<ProfessionalTodoRequest>,
+) -> impl IntoResponse {
+    let (status, completed) = match resolve_todo_state(payload.status, payload.is_completed) {
+        Ok(value) => value,
+        Err(_) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "message": "Invalid status. Use pending, in_progress or completed"
+                })),
+            );
+        }
+    };
+    let mut tx = match state.pool.begin().await {
+        Ok(tx) => tx,
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({
+                    "message": "Something went wrong!"
+                })),
+            );
+        }
+    };
+    let result = match sqlx::query(
+        "UPDATE professional_todos
+         SET todo = ?,
+             is_completed = ?,
+             status = ?,
+             completed_at = CASE WHEN ? = 1 THEN COALESCE(completed_at, datetime('now')) ELSE NULL END,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?",
+    )
+    .bind(&payload.todo)
+    .bind(completed)
+    .bind(&status)
+    .bind(completed)
+    .bind(id)
+    .execute(&mut *tx)
+    .await
+    {
+        Ok(result) => result,
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({
+                    "message": "Something went wrong!"
+                })),
+            );
+        }
+    };
+    if result.rows_affected() == 0 {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(json!({
+                "message": "Todo not found"
+            })),
+        );
+    }
+    if tx.commit().await.is_err() {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({
+                "message": "Something went wrong!"
+            })),
+        );
+    }
+    (
+        StatusCode::OK,
+        Json(json!({
+            "message": "Todo has been updated!",
+            "status": 200
+        })),
+    )
+}
+
+async fn delete_professional_todo(
+    ValidToken: ValidToken,
+    State(state): State<AppState>,
+    Path(id): Path<i32>,
+) -> impl IntoResponse {
+    let mut tx = match state.pool.begin().await {
+        Ok(tx) => tx,
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({
+                    "message": "Something went wrong!"
+                })),
+            );
+        }
+    };
+    let result = match sqlx::query("DELETE FROM professional_todos WHERE id = ?")
+        .bind(id)
+        .execute(&mut *tx)
+        .await
+    {
+        Ok(result) => result,
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({
+                    "message": "Something went wrong!"
+                })),
+            );
+        }
+    };
+    if result.rows_affected() == 0 {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(json!({
+                "message": "Todo not found"
+            })),
+        );
+    }
+    if tx.commit().await.is_err() {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({
+                "message": "Something went wrong!"
+            })),
+        );
+    }
+    (
+        StatusCode::OK,
+        Json(json!({
+            "message": "Todo has been deleted",
             "status": 200
         })),
     )
