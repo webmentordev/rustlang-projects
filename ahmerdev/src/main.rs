@@ -279,7 +279,7 @@ async fn get_notes(
         .fetch_one(&state.pool)
         .await
         .unwrap_or(0);
-    let record_per_page: i64 = 10;
+    let record_per_page: i64 = 20;
     let total_pages = ((total_records as f64) / (record_per_page as f64)).ceil() as i32;
     let off_set = (page - 1) * record_per_page as i32;
     let pagination = create_pagination(total_pages, page).await;
@@ -515,7 +515,7 @@ async fn get_professional_todos(
         .fetch_one(&state.pool)
         .await
         .unwrap_or(0);
-    let record_per_page: i64 = 10;
+    let record_per_page: i64 = 100;
     let total_pages = ((total_records as f64) / (record_per_page as f64)).ceil() as i32;
     let off_set = (page - 1) * record_per_page as i32;
     let pagination = create_pagination(total_pages, page).await;
@@ -524,7 +524,7 @@ async fn get_professional_todos(
     let end_record = (page * record_per_page as i32).min(total_records);
 
     let records = match sqlx::query_as::<_, ProfessionalTodoResponse>(
-        "SELECT id, todo, is_completed, CAST(completed_at AS TEXT) AS completed_at, status, created_at, updated_at FROM professional_todos ORDER BY id DESC LIMIT $1 OFFSET $2",
+    "SELECT id, todo, is_completed, CAST(completed_at AS TEXT) AS completed_at, status, created_at, updated_at FROM professional_todos ORDER BY CASE WHEN status = 'in_progress' THEN 0 ELSE 1 END, id DESC LIMIT $1 OFFSET $2",
     )
     .bind(record_per_page)
     .bind(off_set)

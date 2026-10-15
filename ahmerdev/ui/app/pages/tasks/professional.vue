@@ -27,7 +27,7 @@
             </div>
 
             <div class="flex flex-col mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg" v-if="create_todo">
-                <textarea v-model="todo" rows="6"
+                <textarea v-model="todo" rows="3"
                     class="border border-gray-200 bg-gray-100 p-3 w-full h-full rounded-lg mb-3"
                     placeholder="Write todo here..." required></textarea>
                 <select v-model="status" required class="border border-gray-200 bg-gray-100 p-3 w-full rounded-lg mb-3">
@@ -55,11 +55,11 @@
         <div class="flex flex-col w-full" v-if="records.length">
             <div class="group relative w-full mb-3 p-4 border border-gray-200 rounded-lg" v-for="record in records"
                 :key="record.id">
-                <div class="flex items-start justify-between gap-3 mb-3">
+                <div class="mb-3">
                     <p class="whitespace-pre-line">{{ record.todo }}</p>
-                    <div class="relative shrink-0">
+                    <div class="absolute top-2 right-2">
                         <button @click="toggleMenu(record.id)"
-                            class="todo-menu-trigger px-2 leading-none text-xl font-black cursor-pointer rounded-md hover:bg-gray-100 transition-opacity max-sm:opacity-100 opacity-0 group-hover:opacity-100 focus:opacity-100"
+                            class="todo-menu-trigger px-2 leading-none text-xl font-black cursor-pointer rounded-md bg-white/90 hover:bg-gray-100 transition-opacity max-sm:opacity-100 opacity-0 group-hover:opacity-100 focus:opacity-100"
                             :class="{ 'opacity-100': open_menu === record.id }">
                             &#8943;
                         </button>
@@ -119,7 +119,7 @@ const current_range = ref("");
 
 const status_options = [
     { value: "pending", label: "Pending" },
-    { value: "in_progress", label: "In progress" },
+    { value: "in_progress", label: "In Process" },
     { value: "completed", label: "Completed" }
 ];
 
@@ -238,7 +238,7 @@ async function todo_delete(id) {
 }
 
 function statusLabel(value) {
-    return { pending: "Pending", in_progress: "In progress", completed: "Completed" }[value] ?? value;
+    return { pending: "Pending", in_progress: "In Process", completed: "Completed" }[value] ?? value;
 }
 
 function statusClass(value) {

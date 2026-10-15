@@ -2,11 +2,13 @@
 @import "tailwindcss";
 
 @theme {
+    --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
     --breakpoint-*: initial;
     --breakpoint-main-1: 550px;
     --breakpoint-main-2: 500px;
     --breakpoint-main-3: 460px;
 }
+
 
 * {
     font-family: "Rubik", sans-serif;
