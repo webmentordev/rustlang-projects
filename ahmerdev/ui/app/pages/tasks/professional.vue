@@ -52,6 +52,23 @@
                 or completed, and completed todos show the date they were finished.</p>
         </div>
 
+        <div class="flex flex-wrap items-end gap-3 mb-4">
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Completed from</label>
+                <input v-model="start_date" type="date" :max="end_date || undefined" @change="applyFilters()"
+                    class="border border-gray-200 bg-gray-100 px-3 py-1.5 rounded-lg text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Completed to</label>
+                <input v-model="end_date" type="date" :min="start_date || undefined" @change="applyFilters()"
+                    class="border border-gray-200 bg-gray-100 px-3 py-1.5 rounded-lg text-sm">
+            </div>
+            <button v-if="start_date || end_date" @click="clearDates()"
+                class="py-1.5 px-3 rounded-lg text-sm font-semibold border border-gray-300 hover:bg-gray-100 cursor-pointer">
+                Clear dates
+            </button>
+        </div>
+
         <div class="flex flex-col w-full" v-if="records.length">
             <div class="group relative w-full mb-3 p-4 border border-gray-200 rounded-lg" v-for="record in records"
                 :key="record.id">
@@ -86,7 +103,7 @@
             </div>
         </div>
         <div v-else>
-            <p class="text-gray-600">No todo exists at the moment.</p>
+            <p class="text-gray-600">{{ start_date || end_date ? 'No todos' : 'No todo' }}</p>
         </div>
 
         <div v-if="pagination.length > 1"
@@ -114,6 +131,8 @@ const menu_ref = ref(null);
 const route = useRoute();
 const router = useRouter();
 const current_page = ref(route.query.page ?? 1);
+const start_date = ref(route.query.start ?? "");
+const end_date = ref(route.query.end ?? "");
 const pagination = ref([]);
 const current_range = ref("");
 
@@ -135,9 +154,17 @@ function toggleMenu(id) {
     open_menu.value = open_menu.value === id ? null : id;
 }
 
+function buildQuery(page) {
+    const query = { page };
+    if (start_date.value) query.start = start_date.value;
+    if (end_date.value) query.end = end_date.value;
+    return query;
+}
+
 async function fetchTodos() {
     try {
-        const data = await $fetch("/api/professional_todos/get?page=" + current_page.value);
+        const params = new URLSearchParams(buildQuery(current_page.value));
+        const data = await $fetch("/api/professional_todos/get?" + params.toString());
         records.value = data.data;
         pagination.value = data.pagination;
         current_range.value = data.current_range;
@@ -149,13 +176,21 @@ async function fetchTodos() {
 async function setNewPage(page) {
     if (page != '...') {
         current_page.value = page;
-        router.push({
-            query: {
-                page: page
-            }
-        });
+        router.push({ query: buildQuery(page) });
         await fetchTodos();
     }
+}
+
+async function applyFilters() {
+    current_page.value = 1;
+    router.push({ query: buildQuery(1) });
+    await fetchTodos();
+}
+
+async function clearDates() {
+    start_date.value = "";
+    end_date.value = "";
+    await applyFilters();
 }
 
 function showMessage(message) {

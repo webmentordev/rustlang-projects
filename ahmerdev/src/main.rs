@@ -64,6 +64,12 @@ struct ProfessionalTodoResponse {
     updated_at: NaiveDateTime,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct DateRange {
+    pub start: Option<chrono::NaiveDate>,
+    pub end: Option<chrono::NaiveDate>,
+}
+
 #[derive(Deserialize, Debug)]
 struct Pagination {
     page: Option<i32>, // Always passed so no need for Option!
@@ -509,12 +515,19 @@ fn resolve_todo_state(
 async fn get_professional_todos(
     State(state): State<AppState>,
     Query(query): Query<Pagination>,
+    Query(range): Query<DateRange>,
 ) -> impl IntoResponse {
     let page = query.page.unwrap_or(1).max(1);
-    let total_records: i32 = sqlx::query_scalar("SELECT COUNT(*) FROM professional_todos")
-        .fetch_one(&state.pool)
-        .await
-        .unwrap_or(0);
+    let total_records: i32 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM professional_todos
+         WHERE (?1 IS NULL OR date(completed_at) >= ?1)
+           AND (?2 IS NULL OR date(completed_at) <= ?2)",
+    )
+    .bind(range.start)
+    .bind(range.end)
+    .fetch_one(&state.pool)
+    .await
+    .unwrap_or(0);
     let record_per_page: i64 = 100;
     let total_pages = ((total_records as f64) / (record_per_page as f64)).ceil() as i32;
     let off_set = (page - 1) * record_per_page as i32;
@@ -524,8 +537,15 @@ async fn get_professional_todos(
     let end_record = (page * record_per_page as i32).min(total_records);
 
     let records = match sqlx::query_as::<_, ProfessionalTodoResponse>(
-    "SELECT id, todo, is_completed, CAST(completed_at AS TEXT) AS completed_at, status, created_at, updated_at FROM professional_todos ORDER BY CASE WHEN status = 'in_progress' THEN 0 ELSE 1 END, id DESC LIMIT $1 OFFSET $2",
+        "SELECT id, todo, is_completed, CAST(completed_at AS TEXT) AS completed_at, status, created_at, updated_at
+         FROM professional_todos
+         WHERE (?1 IS NULL OR date(completed_at) >= ?1)
+           AND (?2 IS NULL OR date(completed_at) <= ?2)
+         ORDER BY CASE WHEN status = 'in_progress' THEN 0 ELSE 1 END, id DESC
+         LIMIT ?3 OFFSET ?4",
     )
+    .bind(range.start)
+    .bind(range.end)
     .bind(record_per_page)
     .bind(off_set)
     .fetch_all(&state.pool)
